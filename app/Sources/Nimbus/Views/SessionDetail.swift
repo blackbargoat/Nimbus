@@ -28,7 +28,7 @@ struct SessionDetail: View {
             if let message = model.message {
                 banner(message)
             } else if !model.hasAI {
-                banner("I'll still write down everything I hear. Add your Claude API key in Settings (gear, top right) for notes and answers.")
+                banner("I'll still write down everything I hear. Add a Google or Claude API key in Settings (gear, top right) for notes and live answers.")
             }
             Picker("", selection: $tab) {
                 ForEach(Tab.allCases) { Label($0.rawValue, systemImage: $0.symbol).tag($0) }
@@ -86,8 +86,8 @@ struct SessionDetail: View {
                 model.selectedID = session.id
                 model.toggleRecording()
             } label: {
-                Label(isLive ? "Stop" : (session.lines.isEmpty ? "Listen" : "Keep listening"),
-                      systemImage: isLive ? "stop.fill" : "mic.fill")
+                Label(model.isStarting && isLive ? "Getting ready" : isLive ? "Stop" : (session.lines.isEmpty ? "Listen" : "Keep listening"),
+                      systemImage: model.isStarting && isLive ? "hourglass" : isLive ? "stop.fill" : "mic.fill")
                     .font(.system(size: 14, weight: .semibold))
                     .padding(.horizontal, 6)
             }

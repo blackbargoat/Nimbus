@@ -3,7 +3,7 @@ import SwiftUI
 
 /// The speech bubble that pops up beside the cloud with a live answer.
 final class AnswerPanel: NSPanel {
-    static let size = NSSize(width: 360, height: 250)
+    static let size = NSSize(width: 380, height: 340)
 
     init(model: AppModel) {
         super.init(contentRect: NSRect(origin: .zero, size: Self.size),
@@ -54,58 +54,110 @@ struct AnswerBubble: View {
     }
 
     private func card(_ a: LiveAnswer) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 6) {
-                Image(systemName: "lightbulb.max.fill").foregroundStyle(Theme.sun)
-                Text("Teacher asked").font(.system(size: 11, weight: .bold)).textCase(.uppercase)
-                    .foregroundStyle(Theme.skyDeep)
-                Spacer()
-                if a.isDone {
-                    Button {
-                        NSPasteboard.general.clearContents()
-                        NSPasteboard.general.setString(a.answer, forType: .string)
-                    } label: { Image(systemName: "doc.on.doc") }
-                        .buttonStyle(.plain)
-                        .help("Copy answer")
-                }
-                Button { model.dismissBubble() } label: { Image(systemName: "xmark") }
-                    .buttonStyle(.plain)
-                    .help("Close")
-            }
-            .font(.system(size: 12, weight: .semibold))
-            .foregroundStyle(Theme.inkSoft)
-
-            Text("\u{201C}\(a.question)\u{201D}")
-                .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(Theme.inkSoft)
-                .lineLimit(2)
-
-            ScrollView {
-                Group {
-                    if a.answer.isEmpty {
-                        HStack(spacing: 6) {
-                            ProgressView().controlSize(.small)
-                            Text("Thinking of an answer...").font(.system(size: 13))
-                        }
-                    } else {
-                        Text(LocalizedStringKey(a.answer))
-                            .font(.system(size: 14))
-                            .lineSpacing(2)
-                            .textSelection(.enabled)
+        VStack(spacing: 4) {
+            VStack(alignment: .leading, spacing: 7) {
+                HStack(spacing: 6) {
+                    Image(systemName: "ear.fill").foregroundStyle(Theme.skyDeep)
+                    Text("\u{201C}\(a.question)\u{201D}")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(Theme.inkSoft)
+                        .lineLimit(2)
+                    Spacer(minLength: 4)
+                    if a.isDone {
+                        Button {
+                            NSPasteboard.general.clearContents()
+                            NSPasteboard.general.setString(a.answer, forType: .string)
+                        } label: { Image(systemName: "doc.on.doc") }
+                            .buttonStyle(.plain)
+                            .help("Copy answer")
                     }
+                    Button { model.dismissBubble() } label: { Image(systemName: "xmark") }
+                        .buttonStyle(.plain)
+                        .help("Close")
                 }
-                .foregroundStyle(Theme.ink)
-                .frame(maxWidth: .infinity, alignment: .leading)
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(Theme.inkSoft)
+
+                ScrollView {
+                    Group {
+                        if a.answer.isEmpty {
+                            ThinkingDots().frame(height: 22)
+                        } else {
+                            Text(LocalizedStringKey(a.answer))
+                                .font(.system(size: 14))
+                                .lineSpacing(2)
+                                .textSelection(.enabled)
+                        }
+                    }
+                    .foregroundStyle(Theme.ink)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .frame(maxHeight: 180)
+                .fixedSize(horizontal: false, vertical: true)
             }
-            .frame(maxHeight: 150)
-            .fixedSize(horizontal: false, vertical: true)
+            .padding(.horizontal, 30)
+            .padding(.vertical, 26)
+            .frame(width: 330)
+            .background(ThoughtCloudShape().fill(.white.opacity(0.7)))
+            .glassEffect(.regular.tint(.white.opacity(0.35)), in: ThoughtCloudShape())
+            .shadow(color: Theme.skyDeep.opacity(0.22), radius: 18, y: 8)
+
+            // The little thought bubbles trailing down to Nimbus.
+            VStack(spacing: 3) {
+                Circle().fill(.white).frame(width: 16, height: 16)
+                Circle().fill(.white).frame(width: 9, height: 9).offset(x: -6)
+            }
+            .shadow(color: Theme.skyDeep.opacity(0.2), radius: 6, y: 3)
         }
-        .padding(16)
-        .glassEffect(.regular.tint(.white.opacity(0.55)), in: .rect(cornerRadius: 22))
-        .shadow(color: Theme.skyDeep.opacity(0.2), radius: 16, y: 6)
-        .padding(10)
+        .padding(.horizontal, 10)
+        .padding(.bottom, 4)
         .onHover { inside in
             if inside { model.keepBubble() } else if a.isDone { model.scheduleBubbleHide(a.id, after: 20) }
+        }
+    }
+}
+
+/// A puffy thought-cloud outline: a rounded body with bumps all the way around.
+struct ThoughtCloudShape: Shape {
+    func path(in r: CGRect) -> Path {
+        var p = Path()
+        let inset: CGFloat = 12
+        let body = r.insetBy(dx: inset, dy: inset)
+        p.addRoundedRect(in: body, cornerSize: CGSize(width: 26, height: 26))
+        func bumps(from a: CGPoint, to b: CGPoint, radius: CGFloat) {
+            let length = hypot(b.x - a.x, b.y - a.y)
+            let count = max(2, Int(length / (radius * 1.5)))
+            for i in 0...count {
+                let t = CGFloat(i) / CGFloat(count)
+                let wobble: CGFloat = i.isMultiple(of: 2) ? 1 : 0.8
+                let c = CGPoint(x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t)
+                let rr = radius * wobble
+                p.addEllipse(in: CGRect(x: c.x - rr, y: c.y - rr, width: rr * 2, height: rr * 2))
+            }
+        }
+        let k: CGFloat = 20
+        bumps(from: CGPoint(x: body.minX + k, y: body.minY + 6), to: CGPoint(x: body.maxX - k, y: body.minY + 6), radius: 22)
+        bumps(from: CGPoint(x: body.minX + k, y: body.maxY - 6), to: CGPoint(x: body.maxX - k, y: body.maxY - 6), radius: 18)
+        bumps(from: CGPoint(x: body.minX + 6, y: body.minY + k), to: CGPoint(x: body.minX + 6, y: body.maxY - k), radius: 18)
+        bumps(from: CGPoint(x: body.maxX - 6, y: body.minY + k), to: CGPoint(x: body.maxX - 6, y: body.maxY - k), radius: 18)
+        return p
+    }
+}
+
+/// Three dots bouncing while Nimbus thinks of an answer.
+struct ThinkingDots: View {
+    var body: some View {
+        TimelineView(.animation) { ctx in
+            let t = ctx.date.timeIntervalSinceReferenceDate
+            HStack(spacing: 6) {
+                ForEach(0..<3, id: \.self) { i in
+                    Circle()
+                        .fill(Theme.skyDeep)
+                        .frame(width: 8, height: 8)
+                        .offset(y: -5 * max(0, sin(t * 6 - Double(i) * 0.8)))
+                }
+                Text("thinking...").font(.system(size: 13, weight: .medium)).foregroundStyle(Theme.inkSoft)
+            }
         }
     }
 }

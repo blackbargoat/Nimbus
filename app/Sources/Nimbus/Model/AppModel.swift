@@ -40,6 +40,9 @@ final class AppModel {
     }
 
     @ObservationIgnored private var lastAutoAnswer = Date.distantPast
+    /// Loudest mic level since recording started, to catch a silent or wrong mic.
+    @ObservationIgnored private var loudest: Float = 0
+    @ObservationIgnored private var silenceCheck: Task<Void, Never>?
     @ObservationIgnored private var answerTask: Task<Void, Never>?
     @ObservationIgnored private var hideBubbleTask: Task<Void, Never>?
     @ObservationIgnored private let transcriber = LiveTranscriber()
@@ -49,11 +52,27 @@ final class AppModel {
     /// Optional shared notes server. Empty means Nimbus calls Claude with your own key.
     static let defaultServer = ""
 
-    var apiKey: String = KeyStore.load() {
-        didSet { KeyStore.save(apiKey) }
+    enum Provider: String, CaseIterable, Identifiable {
+        case gemini = "Google Gemini", claude = "Claude"
+        var id: String { rawValue }
     }
 
-    var hasAI: Bool { !apiKey.isEmpty || !serverURL.trimmingCharacters(in: .whitespaces).isEmpty }
+    var provider: Provider = Provider(rawValue: UserDefaults.standard.string(forKey: "provider") ?? "") ?? .gemini {
+        didSet { defaults.set(provider.rawValue, forKey: "provider") }
+    }
+    var apiKey: String = KeyStore.load(.claude) {
+        didSet { KeyStore.save(apiKey, as: .claude) }
+    }
+    var googleKey: String = KeyStore.load(.google) {
+        didSet { KeyStore.save(googleKey, as: .google) }
+    }
+    /// brain.md, kept in memory and saved as it changes.
+    var brain: String = Brain.load() {
+        didSet { Brain.save(brain) }
+    }
+
+    private var activeKey: String { provider == .gemini ? googleKey : apiKey }
+    var hasAI: Bool { !activeKey.isEmpty || !serverURL.trimmingCharacters(in: .whitespaces).isEmpty }
 
     private init() {
         serverURL = defaults.string(forKey: "serverURL") ?? Self.defaultServer
@@ -64,9 +83,14 @@ final class AppModel {
 
         transcriber.onPartial = { [weak self] in self?.partial = $0 }
         transcriber.onLevel = { [weak self] value in
-            Task { @MainActor in self?.level = value }
+            Task { @MainActor in
+                guard let self else { return }
+                self.level = value
+                self.loudest = max(self.loudest, value)
+            }
         }
         transcriber.onLine = { [weak self] text, at in self?.appendLine(text, at: at) }
+        transcriber.onError = { [weak self] in self?.message = $0 }
     }
 
     var mood: CloudMood {
@@ -133,6 +157,13 @@ final class AppModel {
             isRecording = true
             recordingStartedAt = Date()
             scheduleAutoNotes()
+            loudest = 0
+            silenceCheck?.cancel()
+            silenceCheck = Task { [weak self] in
+                try? await Task.sleep(for: .seconds(12))
+                guard let self, !Task.isCancelled, self.isRecording, self.loudest < 0.02 else { return }
+                self.message = "I can't hear anything. Check that the right microphone is picked in System Settings > Sound > Input, and that Nimbus is allowed in Privacy & Security > Microphone."
+            }
         } catch {
             message = error.localizedDescription
             recordingSessionID = nil
@@ -143,6 +174,8 @@ final class AppModel {
     func stopRecording() async {
         guard isRecording, let id = recordingSessionID else { return }
         autoNotesTask?.cancel()
+        silenceCheck?.cancel()
+        sttLog.info("stopping, loudest mic level \(self.loudest, privacy: .public)")
         await transcriber.stop()
         isRecording = false
         partial = ""
@@ -154,6 +187,11 @@ final class AppModel {
         // One last pass so the notes cover the whole class.
         if let session = sessions.first(where: { $0.id == id }), session.lines.count > session.notesLineCount {
             await updateNotes(id)
+        }
+        // Teach the brain what this class covered.
+        if let session = sessions.first(where: { $0.id == id }), session.notes != nil {
+            Brain.learn(from: session)
+            brain = Brain.load()
         }
     }
 
@@ -235,6 +273,23 @@ final class AppModel {
 
     func keepBubble() { hideBubbleTask?.cancel() }
 
+    /// Demo for screenshots: streams a canned answer into the bubble.
+    func demoBubble() {
+        var a = LiveAnswer(question: "Why do you think a country would give up some of its sovereignty?", at: 0)
+        liveAnswer = a
+        Task {
+            try? await Task.sleep(for: .seconds(1.5))
+            let text = "**Say:** Because teaming up gets them stuff they can't get alone, like trade deals and safety.\n- EU members get the single market, so it's cheaper to trade\n- Together they have more say than one small country\n**Key idea:** pooled sovereignty"
+            for word in text.split(separator: " ", omittingEmptySubsequences: false) {
+                a.answer += (a.answer.isEmpty ? "" : " ") + word
+                liveAnswer = a
+                try? await Task.sleep(for: .milliseconds(45))
+            }
+            a.isDone = true
+            liveAnswer = a
+        }
+    }
+
     func dismissBubble() {
         hideBubbleTask?.cancel()
         liveAnswer = nil
@@ -258,27 +313,37 @@ final class AppModel {
     // MARK: Claude
 
     private var server: NotesClient { NotesClient(baseURL: serverURL) }
-    private var direct: ClaudeDirect? { apiKey.isEmpty ? nil : ClaudeDirect(apiKey: apiKey) }
+    private var gemini: GeminiDirect? {
+        provider == .gemini && !googleKey.isEmpty ? GeminiDirect(apiKey: googleKey, brain: brain) : nil
+    }
+    private var claude: ClaudeDirect? {
+        provider == .claude && !apiKey.isEmpty ? ClaudeDirect(apiKey: apiKey, brain: brain) : nil
+    }
 
     private func requireAI() throws {
-        guard hasAI else { throw NotesClient.Failure.server("Add your Claude API key in Settings so I can write notes.") }
+        guard hasAI else {
+            throw NotesClient.Failure.server("Add your \(provider == .gemini ? "Google" : "Claude") API key in Settings so I can write notes.")
+        }
     }
 
     private func fetchNotes(_ s: ClassSession) async throws -> ClassNotes {
         try requireAI()
-        if let direct { return try await direct.notes(for: s) }
+        if let gemini { return try await gemini.notes(for: s) }
+        if let claude { return try await claude.notes(for: s) }
         return try await server.notes(for: s)
     }
 
     private func fetchAnswer(_ q: String, _ s: ClassSession) async throws -> String {
         try requireAI()
-        if let direct { return try await direct.ask(q, in: s) }
+        if let gemini { return try await gemini.ask(q, in: s) }
+        if let claude { return try await claude.ask(q, in: s) }
         return try await server.ask(q, in: s)
     }
 
     private func streamLiveAnswer(_ q: String, _ s: ClassSession) throws -> AsyncThrowingStream<String, Error> {
         try requireAI()
-        if let direct { return direct.answer(q, in: s) }
+        if let gemini { return gemini.answer(q, in: s) }
+        if let claude { return claude.answer(q, in: s) }
         return server.answer(q, in: s)
     }
 

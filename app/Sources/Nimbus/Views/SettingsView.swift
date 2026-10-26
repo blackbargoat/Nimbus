@@ -27,19 +27,34 @@ struct SettingsView: View {
             }
             .toggleStyle(.switch)
 
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Claude API key").font(.system(size: 13, weight: .semibold))
-                SecureField("sk-ant-...", text: $model.apiKey)
-                    .textFieldStyle(.roundedBorder)
-                HStack(spacing: 4) {
-                    Text("Nimbus uses Claude to write notes. Get a key at")
-                    Link("console.anthropic.com", destination: URL(string: "https://console.anthropic.com/settings/keys")!)
+            VStack(alignment: .leading, spacing: 8) {
+                Text("AI that writes your notes").font(.system(size: 13, weight: .semibold))
+                Picker("", selection: $model.provider) {
+                    ForEach(AppModel.Provider.allCases) { Text($0.rawValue).tag($0) }
                 }
-                .font(.system(size: 12))
-                .foregroundStyle(Theme.inkSoft)
-                Text("Saved only on this Mac. You pay Anthropic for what you use.")
-                    .font(.system(size: 12))
-                    .foregroundStyle(Theme.inkSoft)
+                .pickerStyle(.segmented)
+                .labelsHidden()
+
+                if model.provider == .gemini {
+                    SecureField("Google API key (AIza...)", text: $model.googleKey)
+                        .textFieldStyle(.roundedBorder)
+                    HStack(spacing: 4) {
+                        Text("Free key from")
+                        Link("aistudio.google.com", destination: URL(string: "https://aistudio.google.com/app/apikey")!)
+                        Text("(free tier has a daily limit)")
+                    }
+                    .font(.system(size: 12)).foregroundStyle(Theme.inkSoft)
+                } else {
+                    SecureField("Claude API key (sk-ant-...)", text: $model.apiKey)
+                        .textFieldStyle(.roundedBorder)
+                    HStack(spacing: 4) {
+                        Text("Get a key at")
+                        Link("console.anthropic.com", destination: URL(string: "https://console.anthropic.com/settings/keys")!)
+                    }
+                    .font(.system(size: 12)).foregroundStyle(Theme.inkSoft)
+                }
+                Text("Keys are saved only on this Mac.")
+                    .font(.system(size: 12)).foregroundStyle(Theme.inkSoft)
             }
 
             DisclosureGroup("Advanced") {

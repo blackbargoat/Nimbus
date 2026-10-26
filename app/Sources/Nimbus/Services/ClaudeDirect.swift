@@ -4,49 +4,10 @@ import Foundation
 /// Same prompts as the web backend in web/netlify/functions.
 struct ClaudeDirect {
     var apiKey: String
+    var brain: String
 
     static let model = "claude-opus-5-5"
     private static let endpoint = URL(string: "https://api.anthropic.com/v1/messages")!
-
-    // MARK: Prompts
-
-    private static let rules = """
-    You are Nimbus, a friendly study helper for a high school student. You hear their class through a live speech-to-text transcript, so expect missing punctuation, misheard words, and side chatter. Fix obvious mishearings silently from context. Never invent facts the teacher did not say; when you add general knowledge, keep it accurate and say it is extra. Write in clear, simple language a high school student would use. Never use em dashes.
-    """
-
-    private static let notesSystem = rules + """
-
-
-    Turn the class transcript into study notes. Cover everything important the teacher taught, in the order it was taught.
-    - topic: a short name for what the class was about (under 8 words).
-    - summary: 2 to 4 sentences on the big picture.
-    - sections: group the lesson into sections with a clear heading and short bullet points. Each bullet is one idea, usually under 20 words. Include examples, dates, names, formulas, and definitions the teacher gave.
-    - keyTerms: important vocabulary with a one-sentence meaning.
-    - plainWords: explain the hardest idea from class like you're talking to a friend who was absent, in 3 to 5 sentences.
-    - homework: every assignment, due date, test, or reminder the teacher mentioned, with the date if said. Empty if none.
-    - reviewQuestions: 3 to 5 questions the student could be asked about this on a test.
-    If the transcript is mostly small talk or too short, keep the notes short and honest about it.
-    """
-
-    private static let askSystem = rules + """
-
-
-    The student is asking about this class. Answer using what the teacher said first, then add general knowledge if it helps them understand. Be warm and direct. Keep answers short (under 180 words) unless they ask for more. Use a few bullet points when it makes things easier to read. If they ask what they missed at a certain time, use the [mm:ss] timestamps.
-    """
-
-    private static let answerSystem = rules + """
-
-
-    The teacher just asked the class a question out loud and the student wants help answering it right now. They will glance at your answer for a few seconds, so be fast and short.
-
-    Reply in exactly this shape, under 80 words total:
-    **Say:** one or two natural sentences the student could say out loud, in a normal teen voice, not a textbook voice.
-    - one supporting point or example
-    - another point (optional)
-    **Key idea:** a few words naming the concept.
-
-    Base it on what was taught in class when possible. For open-ended or opinion questions, give a clear position with one reason. If the "question" is not really a question to the class (like "right?" or "any questions?"), reply only with: SKIP
-    """
 
     private static let notesSchema: [String: Any] = {
         func strings() -> [String: Any] { ["type": "array", "items": ["type": "string"]] }
@@ -73,7 +34,7 @@ struct ClaudeDirect {
             "fallbacks": "default",
             "cache_control": ["type": "ephemeral"],
             "output_config": ["effort": "low", "format": ["type": "json_schema", "schema": Self.notesSchema]],
-            "system": Self.notesSystem,
+            "system": Prompts.system(Prompts.notes, brain: brain),
             "messages": [["role": "user",
                           "content": Self.transcriptBlocks(session) + [["type": "text", "text": "Write the notes for this class."]]]],
         ]
@@ -104,7 +65,7 @@ struct ClaudeDirect {
             "fallbacks": "default",
             "cache_control": ["type": "ephemeral"],
             "output_config": ["effort": "low"],
-            "system": Self.askSystem,
+            "system": Prompts.system(Prompts.ask, brain: brain),
             "messages": messages,
         ]
         return try await send(body).trimmingCharacters(in: .whitespacesAndNewlines)
@@ -121,7 +82,7 @@ struct ClaudeDirect {
             "stream": true,
             "fallbacks": "default",
             "output_config": ["effort": "low"],
-            "system": Self.answerSystem,
+            "system": Prompts.system(Prompts.answer, brain: brain),
             "messages": [["role": "user", "content": prompt]],
         ]
         return AsyncThrowingStream { continuation in

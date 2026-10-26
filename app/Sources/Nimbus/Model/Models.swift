@@ -27,6 +27,17 @@ struct ClassNotes: Codable, Hashable {
     var plainWords: String
     var homework: [String]
     var reviewQuestions: [String]
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        topic = try c.decodeIfPresent(String.self, forKey: .topic) ?? ""
+        summary = try c.decodeIfPresent(String.self, forKey: .summary) ?? ""
+        sections = try c.decodeIfPresent([NoteSection].self, forKey: .sections) ?? []
+        keyTerms = try c.decodeIfPresent([KeyTerm].self, forKey: .keyTerms) ?? []
+        plainWords = try c.decodeIfPresent(String.self, forKey: .plainWords) ?? ""
+        homework = try c.decodeIfPresent([String].self, forKey: .homework) ?? []
+        reviewQuestions = try c.decodeIfPresent([String].self, forKey: .reviewQuestions) ?? []
+    }
 }
 
 struct ChatMessage: Codable, Identifiable, Hashable {

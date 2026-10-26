@@ -18,6 +18,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         bubble = AnswerPanel(model: model)
         watchBubble()
         showMain()
+        if ProcessInfo.processInfo.environment["NIMBUS_DEMO_ANSWER"] != nil {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1) { self.model.demoBubble() }
+        }
+        if ProcessInfo.processInfo.environment["NIMBUS_AUTOSTART"] != nil {
+            model.newSession()
+            model.toggleRecording()
+        }
     }
 
     /// Shows the answer bubble whenever there's a live answer, and hides it after.

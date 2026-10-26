@@ -3,13 +3,20 @@ import Foundation
 /// Keeps the Claude API key in a private file only this Mac user can read.
 /// (Not the Keychain: ad-hoc signed apps get a Keychain prompt after every update.)
 enum KeyStore {
-    private static let url = SessionStore.folder.deletingLastPathComponent().appendingPathComponent("claude-key")
+    enum Name: String { case claude = "claude-key", google = "google-key" }
 
-    static func load() -> String {
-        (try? String(contentsOf: url, encoding: .utf8))?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+    private static func url(_ name: Name) -> URL {
+        SessionStore.folder.deletingLastPathComponent().appendingPathComponent(name.rawValue)
     }
 
-    static func save(_ key: String) {
+    static func load(_ name: Name) -> String {
+        let url = url(name)
+        return
+(try? String(contentsOf: url, encoding: .utf8))?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+    }
+
+    static func save(_ key: String, as name: Name) {
+        let url = url(name)
         let trimmed = key.trimmingCharacters(in: .whitespacesAndNewlines)
         if trimmed.isEmpty {
             try? FileManager.default.removeItem(at: url)

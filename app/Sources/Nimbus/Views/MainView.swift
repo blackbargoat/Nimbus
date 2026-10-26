@@ -3,6 +3,7 @@ import SwiftUI
 struct MainView: View {
     @Bindable var model: AppModel
     @State private var showSettings = false
+    @State private var showBrain = false
 
     var body: some View {
         NavigationSplitView {
@@ -21,11 +22,16 @@ struct MainView: View {
         }
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
+                Button { showBrain = true } label: { Label("Brain", systemImage: "brain.head.profile") }
+                    .help("Nimbus Brain: teach Nimbus how you take notes")
+            }
+            ToolbarItem(placement: .primaryAction) {
                 Button { showSettings = true } label: { Image(systemName: "gearshape") }
                     .help("Settings")
             }
         }
         .sheet(isPresented: $showSettings) { SettingsView(model: model) }
+        .sheet(isPresented: $showBrain) { BrainView(model: model) }
         .tint(Theme.skyDeep)
     }
 }
