@@ -1,0 +1,15 @@
+{
+  "name": "nimbus-web",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "latest",
+    "@netlify/functions": "latest"
+  },
+  "devDependencies": {
+    "typescript": "latest"
+  }
+}

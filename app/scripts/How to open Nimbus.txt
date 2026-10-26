@@ -1,0 +1,9 @@
+Opening Nimbus for the first time
+
+1. Drag Nimbus into the Applications folder.
+2. Double-click Nimbus. macOS will say it can't check it for malicious software.
+   That's because Nimbus isn't from the App Store yet.
+3. Open System Settings > Privacy & Security, scroll down, and click "Open Anyway" next to Nimbus.
+4. Click Open, then allow the microphone and speech recognition when Nimbus asks.
+
+You only have to do this once.
