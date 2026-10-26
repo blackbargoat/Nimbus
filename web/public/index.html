@@ -3,30 +3,20 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Nimbus: class notes that write themselves</title>
-<meta name="description" content="Nimbus is a little cloud that sits on your Mac during class, listens, writes bullet notes, explains what you didn't get, and helps you answer when the teacher calls on the class.">
+<title>Nimbus: class notes on autopilot</title>
+<meta name="description" content="A little cloud for your Mac that listens to class, writes your notes, and helps you answer.">
 <link rel="icon" type="image/png" href="favicon.png">
-<meta property="og:title" content="Nimbus: class notes that write themselves">
-<meta property="og:description" content="A little cloud for your Mac that listens to class and takes notes for you.">
+<meta property="og:title" content="Nimbus: class notes on autopilot">
 <meta property="og:image" content="icon-512.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
 <header class="nav">
-  <a class="brand" href="#top">
-    <svg class="brand-cloud" viewBox="0 0 128 92" aria-hidden="true"><use href="#cloud-path"/></svg>
-    Nimbus
-  </a>
-  <nav class="nav-links">
-    <a href="#how">How it works</a>
-    <a href="#features">Features</a>
-    <a href="#privacy">Privacy</a>
-    <a href="#faq">FAQ</a>
-  </nav>
+  <a class="brand" href="#top"><svg viewBox="0 0 128 92" aria-hidden="true"><use href="#cloud"/></svg>Nimbus</a>
   <a class="btn btn-dark btn-sm" href="https://github.com/blackbargoat/Nimbus/releases/latest/download/Nimbus.dmg">Download</a>
 </header>
 
@@ -34,83 +24,78 @@
   <section class="hero">
     <div class="sky" aria-hidden="true">
       <span class="puff p1"></span><span class="puff p2"></span><span class="puff p3"></span>
-      <span class="puff p4"></span><span class="puff p5"></span><span class="puff p6"></span>
+      <span class="puff p4"></span><span class="puff p5"></span>
     </div>
-
     <div class="hero-inner">
       <div class="mascot" aria-hidden="true">
-        <svg viewBox="0 0 128 92">
-          <defs>
-            <linearGradient id="body" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2="92">
-              <stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#e6f0ff"/>
-            </linearGradient>
-          </defs>
-          <use href="#cloud-path" fill="url(#body)"/>
-          <g class="eyes" fill="#121f3d">
-            <rect x="54" y="52" width="7" height="11" rx="3.5"/>
-            <rect x="70" y="52" width="7" height="11" rx="3.5"/>
-          </g>
-          <path d="M60 69 q6 5 12 0" stroke="#121f3d" stroke-width="3" fill="none" stroke-linecap="round"/>
-        </svg>
+        <svg viewBox="0 0 128 92"><use href="#cloud" fill="url(#body)"/><g class="eyes" fill="#121f3d"><rect x="54" y="50" width="7" height="11" rx="3.5"/><rect x="70" y="50" width="7" height="11" rx="3.5"/></g><path d="M60 67 q6 5 12 0" stroke="#121f3d" stroke-width="3" fill="none" stroke-linecap="round"/></svg>
       </div>
-
-      <h1>Class notes that<br>write themselves.</h1>
-      <p class="lede">Meet Nimbus, a little cloud for your Mac. He listens to class, writes your bullet notes, explains what didn't click, and helps you answer when the teacher asks the room.</p>
-
+      <h1>Class notes,<br>on autopilot.</h1>
       <div class="cta-row">
         <a class="btn btn-dark btn-lg" href="https://github.com/blackbargoat/Nimbus/releases/latest/download/Nimbus.dmg">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16.4 12.6c0-2.6 2.1-3.8 2.2-3.9-1.2-1.8-3.1-2-3.7-2-1.6-.2-3.1.9-3.9.9-.8 0-2-.9-3.4-.9-1.7 0-3.3 1-4.2 2.6-1.8 3.1-.5 7.7 1.3 10.2.9 1.2 1.9 2.6 3.2 2.6 1.3-.1 1.8-.8 3.3-.8 1.6 0 2 .8 3.4.8 1.4 0 2.3-1.3 3.1-2.5 1-1.4 1.4-2.8 1.4-2.9-.1 0-2.7-1-2.7-4.1zM13.9 5c.7-.9 1.2-2.1 1.1-3.3-1 0-2.3.7-3 1.6-.7.8-1.3 2-1.1 3.2 1.1.1 2.3-.6 3-1.5z"/></svg>
           Download for Mac
         </a>
-        <a class="btn btn-glass btn-lg" href="#how">See how it works</a>
       </div>
-      <p class="fine">Free app. Uses your own Claude API key. macOS 26 Tahoe or newer, Apple Silicon and Intel.</p>
-
-      <div class="ask-card">
-        <div class="ask-label"><span class="dot"></span> Teacher asked</div>
-        <p class="ask-q">&ldquo;Why do you think the Strait of Hormuz matters so much to other countries?&rdquo;</p>
-        <p class="ask-a" id="typed"></p>
-      </div>
+      <p class="fine">Free · macOS 26+</p>
+      <a class="scroll-hint" href="#demo" aria-label="See the demo"><span></span></a>
     </div>
   </section>
 
-  <section class="showcase">
-    <div class="window">
-      <div class="window-bar"><i></i><i></i><i></i><span>Nimbus</span></div>
-      <div class="app">
-        <aside class="app-side">
-          <p class="side-title">Your classes</p>
-          <div class="side-item active"><span class="rec"></span><b>Global Politics</b><small>Today · 48:12</small></div>
-          <div class="side-item"><b>Chemistry</b><small>Yesterday · 51:40</small></div>
-          <div class="side-item"><b>Spanish 3</b><small>Fri · 44:05</small></div>
-          <div class="side-item"><b>Lang and Lit</b><small>Thu · 50:19</small></div>
-        </aside>
-        <div class="app-main">
-          <div class="app-head">
-            <div>
-              <h3>Challenges to state sovereignty</h3>
-              <small>Monday, October 26 · 48:12 · 6,204 words</small>
-            </div>
-            <span class="pill-dark">Stop</span>
-          </div>
-          <div class="tabs"><span class="on">Notes</span><span>Live answers</span><span>Transcript</span><span>Ask Nimbus</span></div>
-          <div class="cards">
-            <div class="card tint">
-              <p class="card-k">Big picture</p>
-              <p>States are losing some control from above (supranational groups like the EU) and from below (cartels, separatists, big companies).</p>
-            </div>
-            <div class="card sun">
-              <p class="card-k sunk">Homework and due dates</p>
-              <p>✓ Notebook check on Wednesday, Oct 28</p>
-              <p>✓ Beyond the Headlines briefing, Round 1</p>
-            </div>
-            <div class="card">
-              <p class="card-h">Challenges from above</p>
-              <ul><li>Supranational = decisions are binding on members</li><li>EU members pool sovereignty for trade and security</li><li>Example: Brexit, "take back control" in 2016</li></ul>
-            </div>
-            <div class="card">
-              <p class="card-h">Challenges from below</p>
-              <ul><li>Non-state actors can weaken internal sovereignty</li><li>Separatist movements want their own state</li><li>TNCs can be more powerful than some states</li></ul>
+  <section class="demo" id="demo">
+    <div class="demo-pin">
+      <div class="captions" aria-live="polite">
+        <p class="cap c0">Press listen.</p>
+        <p class="cap c1">It hears class.</p>
+        <p class="cap c2">Notes write themselves.</p>
+        <p class="cap c3">It helps you answer.</p>
+        <p class="cap c4">One tiny cloud.</p>
+      </div>
+      <div class="screen-frame">
+        <div class="screen">
+          <div class="camera">
+            <div class="stage">
+              <div class="wall"><span class="wpuff w1"></span><span class="wpuff w2"></span><span class="wpuff w3"></span></div>
+              <div class="menubar"><b></b><i>Nimbus</i><i>Class</i><i>Edit</i><span>Mon 9:41</span></div>
+
+              <div class="win">
+                <div class="win-bar"><i></i><i></i><i></i></div>
+                <aside class="win-side">
+                  <p>Your classes</p>
+                  <div class="sel"><span class="rec"></span>Global Politics</div>
+                  <div>Chemistry</div><div>Spanish 3</div><div>Lang and Lit</div>
+                </aside>
+                <div class="win-main">
+                  <h4>Challenges to sovereignty</h4>
+                  <div class="tabs"><span class="on">Notes</span><span>Live</span><span>Transcript</span><span>Ask</span></div>
+                  <div class="note big n1"><em>Big picture</em>States lose some control from above (EU) and below (cartels, separatists).</div>
+                  <div class="note due n2"><em>Due</em>✓ Notebook check, Wed Oct 28</div>
+                  <div class="note n3"><b>From above</b><ul><li>Supranational = rules bind members</li><li>EU = pooled sovereignty</li><li>Brexit -> "take back control"</li></ul></div>
+                  <div class="note n4"><b>From below</b><ul><li>Non-state actors weaken states</li><li>Separatists want own state</li><li>TNCs > some countries</li></ul></div>
+                </div>
+              </div>
+
+              <div class="live">
+                <span class="wave"><i></i><i></i><i></i><i></i><i></i></span>
+                <p class="l1">"Today we're looking at challenges to sovereignty."</p>
+                <p class="l2">"The EU is supranational, so its rules bind everyone."</p>
+                <p class="l3">"Notebooks are due Wednesday."</p>
+              </div>
+
+              <div class="thought">
+                <svg class="thought-bg" viewBox="0 0 340 210" aria-hidden="true"><use href="#thought"/></svg>
+                <div class="thought-in">
+                  <p class="tq">👂 "Why would a country give up sovereignty?"</p>
+                  <p class="ta"><b>Say:</b> Teaming up gets them stuff they can't get alone, like trade deals and safety.</p>
+                  <p class="tk"><b>Key idea:</b> pooled sovereignty</p>
+                </div>
+                <span class="tdot d1"></span><span class="tdot d2"></span>
+              </div>
+
+              <div class="nimbus">
+                <svg viewBox="0 0 128 92" aria-hidden="true"><use href="#cloud" fill="url(#body)"/><g fill="#121f3d"><rect x="54" y="50" width="7" height="11" rx="3.5"/><rect x="70" y="50" width="7" height="11" rx="3.5"/></g><g class="mouth" fill="#2274e8"><rect x="58" y="66" width="3" height="6" rx="1.5"/><rect x="63" y="64" width="3" height="10" rx="1.5"/><rect x="68" y="66" width="3" height="6" rx="1.5"/></g></svg>
+                <span class="mic"><i></i></span>
+              </div>
             </div>
           </div>
         </div>
@@ -118,102 +103,53 @@
     </div>
   </section>
 
-  <section class="steps" id="how">
-    <p class="eyebrow">How it works</p>
-    <h2>Press listen. Nimbus does the rest.</h2>
-    <div class="step-grid">
-      <article class="step reveal">
-        <span class="num">1</span>
-        <h3>He listens</h3>
-        <p>Nimbus floats in the corner of your screen and turns your teacher's words into text, right on your Mac.</p>
-      </article>
-      <article class="step reveal">
-        <span class="num">2</span>
-        <h3>He takes notes</h3>
-        <p>Every few minutes your notes update: the big picture, bullet points, key terms, and anything due.</p>
-      </article>
-      <article class="step reveal">
-        <span class="num">3</span>
-        <h3>He helps you get it</h3>
-        <p>Ask about anything from class, or tap the lightbulb when the teacher asks the room a question.</p>
-      </article>
-    </div>
-  </section>
-
-  <section class="features" id="features">
-    <p class="eyebrow">Features</p>
-    <h2>Everything you'd write down,<br>without missing the lesson.</h2>
-    <div class="feature-grid">
-      <article class="feature big reveal">
-        <h3>Live answers</h3>
-        <p>When your teacher asks the class an open-ended question, a bubble pops up next to Nimbus with something you could actually say, plus a point or two to back it up.</p>
-        <div class="bubble-demo">
-          <p class="ask-label"><span class="dot"></span> Teacher asked</p>
-          <p class="ask-q">&ldquo;Is the EU good for its members?&rdquo;</p>
-          <p><b>Say:</b> Mostly yes, because the single market makes people richer, but members give up some control, which is why the UK left.</p>
-          <p class="key"><b>Key idea:</b> pooled sovereignty</p>
-        </div>
-      </article>
-      <article class="feature reveal">
-        <h3>Bullet notes</h3>
-        <p>Organized by topic, in the order it was taught, with the examples and dates your teacher gave.</p>
-      </article>
-      <article class="feature reveal">
-        <h3>Homework catcher</h3>
-        <p>"Due Wednesday" said once at the end of class? Nimbus puts it at the top of your notes.</p>
-      </article>
-      <article class="feature reveal">
-        <h3>Ask Nimbus</h3>
-        <p>"What did I miss in the last five minutes?" "Explain this like I'm new." Answers come from what was said in class.</p>
-      </article>
-      <article class="feature reveal">
-        <h3>Quiz yourself</h3>
-        <p>Every class ends with a few questions you might see on the test, plus the hardest idea in plain words.</p>
-      </article>
-      <article class="feature reveal">
-        <h3>Paste anywhere</h3>
-        <p>One click copies clean notes you can drop into Google Docs or your class notebook.</p>
-      </article>
-    </div>
-  </section>
-
-  <section class="privacy" id="privacy">
-    <div class="privacy-card reveal">
-      <p class="eyebrow">Privacy</p>
-      <h2>Your audio never leaves your Mac.</h2>
-      <p>Nimbus uses Apple's on-device speech recognition, so the recording stays on your computer. Only the text goes to Claude, straight from your Mac with your own key, when Nimbus writes notes or answers a question. Your classes are saved on your Mac, not on a server. Always check that your teacher is fine with you recording class.</p>
-    </div>
-  </section>
-
-  <section class="faq" id="faq">
-    <p class="eyebrow">FAQ</p>
-    <h2>Questions</h2>
-    <details><summary>Is it free?</summary><p>The app is free. Notes and answers come from Claude, so you paste your own Claude API key into Settings once (get one at console.anthropic.com). You pay Anthropic directly for what you use, and recording and the transcript work even without a key.</p></details>
-    <details><summary>Which Macs does it work on?</summary><p>Any Mac running macOS 26 Tahoe or newer, Apple Silicon or Intel. Nimbus uses the speech model built into macOS 26, and the first time you press Listen your Mac downloads it for your language.</p></details>
-    <details><summary>macOS says it can't check Nimbus. What do I do?</summary><p>Nimbus isn't in the App Store yet. After you drag it to Applications and open it once, go to System Settings, then Privacy &amp; Security, and click Open Anyway. You only do this once.</p></details>
-    <details><summary>Does it work for online classes?</summary><p>Yes, as long as your Mac's microphone can hear the class. Speakers or a quiet room work best.</p></details>
-    <details><summary>What AI does it use?</summary><p>Notes, answers, and live help come from Claude by Anthropic, using your own API key. The key is saved only on your Mac.</p></details>
+  <section class="tiles">
+    <article class="tile t-brain reveal">
+      <div class="file">
+        <p class="fname">brain.md</p>
+        <p class="hl"># How to write my notes</p>
+        <p>- short bullets, simple words</p>
+        <p>- use the teacher's examples</p>
+        <p class="hl">- put what's due at the top</p>
+        <p class="learn">+ Oct 26, Glo Po: sovereignty</p>
+      </div>
+      <h3>Learns how you write.</h3>
+    </article>
+    <article class="tile t-ask reveal">
+      <div class="chat">
+        <p class="me">what did I miss?</p>
+        <p class="bot">Notebooks are due Wednesday.</p>
+      </div>
+      <h3>Ask about class.</h3>
+    </article>
+    <article class="tile t-private reveal">
+      <div class="lock"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10V7a5 5 0 0 1 10 0v3h1a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V11a1 1 0 0 1 1-1h1zm2 0h6V7a3 3 0 0 0-6 0v3z"/></svg></div>
+      <h3>Audio stays on your Mac.</h3>
+    </article>
+    <article class="tile t-copy reveal">
+      <div class="paste"><span class="doc"></span><span class="arrow">→</span><span class="gdoc">Docs</span></div>
+      <h3>One-click copy.</h3>
+    </article>
   </section>
 
   <section class="final">
-    <div class="sky" aria-hidden="true"><span class="puff p2"></span><span class="puff p5"></span></div>
-    <h2>Let the cloud take notes.</h2>
-    <a class="btn btn-dark btn-lg" href="https://github.com/blackbargoat/Nimbus/releases/latest/download/Nimbus.dmg">Download Nimbus for Mac</a>
-    <p class="fine">Version 1.0 · macOS 26 or newer</p>
+    <h2>Let the cloud<br>take notes.</h2>
+    <a class="btn btn-dark btn-lg" href="https://github.com/blackbargoat/Nimbus/releases/latest/download/Nimbus.dmg">Download Nimbus</a>
   </section>
 </main>
 
-<footer class="foot">
-  <span>Nimbus</span>
-  <span>Made for students who'd rather listen than scribble.</span>
-</footer>
+<footer class="foot"><span>Nimbus</span><span>Ask before recording class.</span></footer>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <defs>
-    <g id="cloud-path"><circle cx="23.0" cy="60.7" r="17.9"/><circle cx="46.1" cy="42.3" r="24.3"/><circle cx="74.2" cy="33.1" r="29.4"/><circle cx="99.8" cy="47.8" r="21.8"/><circle cx="112.6" cy="64.4" r="14.1"/><circle cx="38.4" cy="79.1" r="11.5"/><circle cx="70.4" cy="81.0" r="12.8"/><circle cx="97.3" cy="79.1" r="10.9"/><rect x="7.7" y="50.6" width="112.6" height="34" rx="16.6"/></g>
+    <linearGradient id="body" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2="92"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#e3eeff"/></linearGradient>
+    <g id="cloud"><circle cx="23.0" cy="60.7" r="17.9"/><circle cx="46.1" cy="42.3" r="24.3"/><circle cx="74.2" cy="33.1" r="29.4"/><circle cx="99.8" cy="47.8" r="21.8"/><circle cx="112.6" cy="64.4" r="14.1"/><circle cx="38.4" cy="79.1" r="11.5"/><circle cx="70.4" cy="81.0" r="12.8"/><circle cx="97.3" cy="79.1" r="10.9"/><rect x="7.7" y="50.6" width="112.6" height="34" rx="16.6"/></g>
+    <g id="thought" fill="#fff"><rect x="18" y="22" width="304" height="166" rx="40"/><circle cx="50" cy="30" r="28"/><circle cx="100" cy="22" r="30"/><circle cx="155" cy="20" r="30"/><circle cx="210" cy="22" r="30"/><circle cx="262" cy="26" r="29"/><circle cx="305" cy="45" r="26"/><circle cx="320" cy="100" r="22"/><circle cx="308" cy="160" r="26"/><circle cx="260" cy="186" r="24"/><circle cx="205" cy="190" r="24"/><circle cx="150" cy="190" r="24"/><circle cx="95" cy="188" r="24"/><circle cx="42" cy="170" r="26"/><circle cx="20" cy="110" r="22"/></g>
   </defs>
 </svg>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
 <script src="app.js" defer></script>
 </body>
 </html>
