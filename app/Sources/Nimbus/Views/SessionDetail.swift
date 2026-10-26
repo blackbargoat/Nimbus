@@ -27,6 +27,8 @@ struct SessionDetail: View {
             header
             if let message = model.message {
                 banner(message)
+            } else if !model.hasAI {
+                banner("I'll still write down everything I hear. Add your Claude API key in Settings (gear, top right) for notes and answers.")
             }
             Picker("", selection: $tab) {
                 ForEach(Tab.allCases) { Label($0.rawValue, systemImage: $0.symbol).tag($0) }
@@ -103,8 +105,10 @@ struct SessionDetail: View {
             Image(systemName: "exclamationmark.bubble.fill").foregroundStyle(Theme.sun)
             Text(text).font(.system(size: 13)).foregroundStyle(Theme.ink)
             Spacer()
-            Button { model.message = nil } label: { Image(systemName: "xmark") }
-                .buttonStyle(.plain)
+            if model.message != nil {
+                Button { model.message = nil } label: { Image(systemName: "xmark") }
+                    .buttonStyle(.plain)
+            }
         }
         .padding(12)
         .glassEffect(.regular.tint(Theme.sun.opacity(0.15)), in: .rect(cornerRadius: 14))

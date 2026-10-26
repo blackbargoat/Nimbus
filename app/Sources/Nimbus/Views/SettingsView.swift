@@ -28,16 +28,33 @@ struct SettingsView: View {
             .toggleStyle(.switch)
 
             VStack(alignment: .leading, spacing: 6) {
-                Text("Notes server").font(.system(size: 13, weight: .semibold))
-                TextField(AppModel.defaultServer, text: $model.serverURL)
+                Text("Claude API key").font(.system(size: 13, weight: .semibold))
+                SecureField("sk-ant-...", text: $model.apiKey)
                     .textFieldStyle(.roundedBorder)
-                Button("Use default") { model.serverURL = AppModel.defaultServer }
-                    .buttonStyle(.link)
+                HStack(spacing: 4) {
+                    Text("Nimbus uses Claude to write notes. Get a key at")
+                    Link("console.anthropic.com", destination: URL(string: "https://console.anthropic.com/settings/keys")!)
+                }
+                .font(.system(size: 12))
+                .foregroundStyle(Theme.inkSoft)
+                Text("Saved only on this Mac. You pay Anthropic for what you use.")
+                    .font(.system(size: 12))
+                    .foregroundStyle(Theme.inkSoft)
             }
+
+            DisclosureGroup("Advanced") {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Notes server (leave empty to use your own key)").font(.system(size: 12))
+                    TextField("https://...", text: $model.serverURL)
+                        .textFieldStyle(.roundedBorder)
+                }
+                .padding(.top, 6)
+            }
+            .font(.system(size: 13))
 
             GlassCard(tint: Theme.sky) {
                 CardTitle(symbol: "lock.shield", text: "Privacy")
-                Text("Audio never leaves your Mac. Nimbus turns speech into text on this computer, and only the text goes to the notes server when it writes notes or answers a question. Your classes are saved in your Library folder.")
+                Text("Audio never leaves your Mac. Nimbus turns speech into text on this computer, and only the text goes to Claude when it writes notes or answers a question. Your classes are saved in your Library folder.")
                     .font(.system(size: 13))
                     .foregroundStyle(Theme.ink)
                 Text("Ask your teacher before recording a class.")

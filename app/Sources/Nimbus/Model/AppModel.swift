@@ -46,7 +46,14 @@ final class AppModel {
     @ObservationIgnored private var autoNotesTask: Task<Void, Never>?
     @ObservationIgnored private var baseDuration: TimeInterval = 0
 
-    static let defaultServer = "https://nimbus-class-notes.netlify.app"
+    /// Optional shared notes server. Empty means Nimbus calls Claude with your own key.
+    static let defaultServer = ""
+
+    var apiKey: String = KeyStore.load() {
+        didSet { KeyStore.save(apiKey) }
+    }
+
+    var hasAI: Bool { !apiKey.isEmpty || !serverURL.trimmingCharacters(in: .whitespaces).isEmpty }
 
     private init() {
         serverURL = defaults.string(forKey: "serverURL") ?? Self.defaultServer
@@ -190,7 +197,7 @@ final class AppModel {
         isAnswering = true
         answerTask = Task {
             do {
-                for try await chunk in client.answer(question, in: session) {
+                for try await chunk in try streamLiveAnswer(question, session) {
                     answer.answer += chunk
                     if liveAnswer?.id == answer.id { liveAnswer = answer }
                 }
@@ -250,7 +257,30 @@ final class AppModel {
 
     // MARK: Claude
 
-    var client: NotesClient { NotesClient(baseURL: serverURL) }
+    private var server: NotesClient { NotesClient(baseURL: serverURL) }
+    private var direct: ClaudeDirect? { apiKey.isEmpty ? nil : ClaudeDirect(apiKey: apiKey) }
+
+    private func requireAI() throws {
+        guard hasAI else { throw NotesClient.Failure.server("Add your Claude API key in Settings so I can write notes.") }
+    }
+
+    private func fetchNotes(_ s: ClassSession) async throws -> ClassNotes {
+        try requireAI()
+        if let direct { return try await direct.notes(for: s) }
+        return try await server.notes(for: s)
+    }
+
+    private func fetchAnswer(_ q: String, _ s: ClassSession) async throws -> String {
+        try requireAI()
+        if let direct { return try await direct.ask(q, in: s) }
+        return try await server.ask(q, in: s)
+    }
+
+    private func streamLiveAnswer(_ q: String, _ s: ClassSession) throws -> AsyncThrowingStream<String, Error> {
+        try requireAI()
+        if let direct { return direct.answer(q, in: s) }
+        return server.answer(q, in: s)
+    }
 
     func updateNotes(_ id: UUID? = nil) async {
         guard let id = id ?? selectedID,
@@ -260,7 +290,7 @@ final class AppModel {
         isUpdatingNotes = true
         defer { isUpdatingNotes = false }
         do {
-            let notes = try await client.notes(for: session)
+            let notes = try await fetchNotes(session)
             update(id) {
                 $0.notes = notes
                 $0.notesUpdatedAt = Date()
@@ -279,7 +309,7 @@ final class AppModel {
         isAsking = true
         defer { isAsking = false }
         do {
-            let answer = try await client.ask(q, in: session)
+            let answer = try await fetchAnswer(q, session)
             update(id) { $0.chat.append(ChatMessage(role: .assistant, text: answer)) }
         } catch {
             update(id) { $0.chat.append(ChatMessage(role: .assistant, text: "I couldn't answer that: \(error.localizedDescription)")) }
