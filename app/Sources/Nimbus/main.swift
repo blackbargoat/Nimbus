@@ -15,9 +15,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let panel = CloudPanel(model: model) { [weak self] in self?.showMain() }
         panel.orderFrontRegardless()
         cloud = panel
+        // Recording: NIMBUS_CLOUD_AT="x,y" (screen points, bottom-left origin).
+        if let at = ProcessInfo.processInfo.environment["NIMBUS_CLOUD_AT"]?.split(separator: ",").compactMap({ Double($0) }), at.count == 2 {
+            panel.setFrameOrigin(NSPoint(x: at[0], y: at[1]))
+        }
         bubble = AnswerPanel(model: model)
         watchBubble()
         showMain()
+        if model.demo { model.startDemoLevels() }
+        if let scene = ProcessInfo.processInfo.environment["NIMBUS_SCENE"] { runScene(scene) }
         if ProcessInfo.processInfo.environment["NIMBUS_DEMO_ANSWER"] != nil {
             DispatchQueue.main.asyncAfter(deadline: .now() + 1) { self.model.demoBubble() }
         }
@@ -42,13 +48,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func syncBubble() {
         guard let bubble, let cloud else { return }
         if model.liveAnswer != nil {
-            if !bubble.isVisible { bubble.place(near: cloud.frame) }
+            if bubble.parent == nil {
+                bubble.place(near: cloud.frame)
+                // As a child window, the bubble moves whenever the cloud is dragged.
+                cloud.addChildWindow(bubble, ordered: .above)
+            }
             bubble.orderFrontRegardless()
         } else {
             // Let the closing animation play before the window goes away.
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { [weak self] in
-                guard let self, self.model.liveAnswer == nil else { return }
-                self.bubble?.orderOut(nil)
+                guard let self, self.model.liveAnswer == nil, let bubble = self.bubble else { return }
+                bubble.parent?.removeChildWindow(bubble)
+                bubble.orderOut(nil)
             }
         }
     }
@@ -81,10 +92,36 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             w.contentView = NSHostingView(rootView: MainView(model: model))
             w.setFrameAutosaveName("NimbusMain")
             if !w.setFrameUsingName("NimbusMain") { w.center() }
+            // Recording: NIMBUS_WINDOW_AT="x,y,w,h" (screen points, bottom-left origin).
+            if let f = ProcessInfo.processInfo.environment["NIMBUS_WINDOW_AT"]?.split(separator: ",").compactMap({ Double($0) }), f.count == 4 {
+                w.setFrame(NSRect(x: f[0], y: f[1], width: f[2], height: f[3]), display: true)
+            }
             window = w
         }
         NSApp.activate()
         window?.makeKeyAndOrderFront(nil)
+        // Don't start with the class title selected.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in self?.window?.makeFirstResponder(nil) }
+    }
+
+    /// Scripted scenes for recording the website demos.
+    private func runScene(_ scene: String) {
+        Task { @MainActor in
+            switch scene {
+            case "ask":
+                try? await Task.sleep(for: .seconds(2))
+                await model.ask("What did I miss in the last 5 minutes?")
+            case "notes":
+                // Live transcription runs from NIMBUS_TEST_AUDIO; write notes partway through.
+                try? await Task.sleep(for: .seconds(16))
+                await model.updateNotes()
+            case "brain":
+                try? await Task.sleep(for: .seconds(1))
+                NotificationCenter.default.post(name: .showBrain, object: nil)
+            default:
+                break
+            }
+        }
     }
 
     @objc private func newClass() { model.newSession(); showMain() }

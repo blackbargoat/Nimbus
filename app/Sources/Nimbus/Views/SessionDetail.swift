@@ -17,7 +17,7 @@ struct SessionDetail: View {
         }
     }
 
-    @State private var tab: Tab = .notes
+    @State private var tab: Tab = Tab.allCases.first { "\($0)" == ProcessInfo.processInfo.environment["NIMBUS_DEMO_TAB"] } ?? .notes
     @State private var title = ""
 
     private var isLive: Bool { model.recordingSessionID == session.id }
@@ -27,7 +27,7 @@ struct SessionDetail: View {
             header
             if let message = model.message {
                 banner(message)
-            } else if !model.hasAI {
+            } else if !model.hasAI && !model.demo {
                 banner("I'll still write down everything I hear. Add a Google or Claude API key in Settings (gear, top right) for notes and live answers.")
             }
             Picker("", selection: $tab) {

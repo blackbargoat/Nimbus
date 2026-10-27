@@ -32,6 +32,8 @@ cp .build/apple/Products/Release/Nimbus "$APP/Contents/MacOS/Nimbus"
 strip -S -x "$APP/Contents/MacOS/Nimbus"
 cp Resources/Info.plist "$APP/Contents/Info.plist"
 cp Resources/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
+# Optional shared Google key (kept out of git; see .gitignore).
+[[ -f Resources/bundled-google-key ]] && cp Resources/bundled-google-key "$APP/Contents/Resources/"
 xattr -cr "$APP"
 
 if [[ $MODE == notarized ]]; then

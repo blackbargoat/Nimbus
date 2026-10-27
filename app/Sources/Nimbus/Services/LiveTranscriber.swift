@@ -42,7 +42,8 @@ final class LiveTranscriber {
     ///   recordings keep counting from where they left off.
     func start(locale preferred: Locale, offset: TimeInterval) async throws {
         self.offset = offset
-        try await Self.requestPermissions()
+        let testAudio = ProcessInfo.processInfo.environment["NIMBUS_TEST_AUDIO"]
+        if testAudio == nil { try await Self.requestPermissions() }
 
         var match = await SpeechTranscriber.supportedLocale(equivalentTo: preferred)
         if match == nil {

@@ -1,5 +1,9 @@
 import SwiftUI
 
+extension Notification.Name {
+    static let showBrain = Notification.Name("NimbusShowBrain")
+}
+
 struct MainView: View {
     @Bindable var model: AppModel
     @State private var showSettings = false
@@ -32,6 +36,10 @@ struct MainView: View {
         }
         .sheet(isPresented: $showSettings) { SettingsView(model: model) }
         .sheet(isPresented: $showBrain) { BrainView(model: model) }
+        .onReceive(NotificationCenter.default.publisher(for: .showBrain)) { _ in showBrain = true }
+        .sheet(isPresented: Binding(get: { model.needsOnboarding && !model.demo }, set: { _ in })) {
+            OnboardingView(model: model).interactiveDismissDisabled()
+        }
         .tint(Theme.skyDeep)
     }
 }

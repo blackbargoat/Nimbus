@@ -36,7 +36,12 @@ struct SettingsView: View {
                 .labelsHidden()
 
                 if model.provider == .gemini {
-                    SecureField("Google API key (AIza...)", text: $model.googleKey)
+                    if model.usingBuiltInKey {
+                        Label("Using Nimbus's built-in key. Add your own to get your own limit.", systemImage: "checkmark.seal.fill")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundStyle(Theme.skyDeep)
+                    }
+                    SecureField("Your Google API key (optional)", text: $model.googleKey)
                         .textFieldStyle(.roundedBorder)
                     HStack(spacing: 4) {
                         Text("Free key from")

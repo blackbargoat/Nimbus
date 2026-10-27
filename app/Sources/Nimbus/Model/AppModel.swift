@@ -66,12 +66,24 @@ final class AppModel {
     var googleKey: String = KeyStore.load(.google) {
         didSet { KeyStore.save(googleKey, as: .google) }
     }
+    /// First launch shows onboarding, which writes the brain.
+    var needsOnboarding = !UserDefaults.standard.bool(forKey: "onboarded")
+
+    func finishOnboarding(brain newBrain: String) {
+        brain = newBrain
+        defaults.set(true, forKey: "onboarded")
+        needsOnboarding = false
+    }
+
     /// brain.md, kept in memory and saved as it changes.
     var brain: String = Brain.load() {
         didSet { Brain.save(brain) }
     }
 
-    private var activeKey: String { provider == .gemini ? googleKey : apiKey }
+    /// The student's own Google key, or the one built into the app.
+    private var effectiveGoogleKey: String { googleKey.isEmpty ? KeyStore.bundledGoogle : googleKey }
+    private var activeKey: String { provider == .gemini ? effectiveGoogleKey : apiKey }
+    var usingBuiltInKey: Bool { provider == .gemini && googleKey.isEmpty && !KeyStore.bundledGoogle.isEmpty }
     var hasAI: Bool { !activeKey.isEmpty || !serverURL.trimmingCharacters(in: .whitespaces).isEmpty }
 
     private init() {
@@ -93,10 +105,20 @@ final class AppModel {
         transcriber.onError = { [weak self] in self?.message = $0 }
     }
 
+    /// Screenshot mode (NIMBUS_DEMO): the cloud acts like it's listening.
+    let demo = ProcessInfo.processInfo.environment["NIMBUS_DEMO"] != nil
+
     var mood: CloudMood {
+        switch ProcessInfo.processInfo.environment["NIMBUS_DEMO_MOOD"] {
+        case "idle": return .idle
+        case "thinking": return .thinking
+        case "done": return .done
+        case "listening": return .listening
+        default: break
+        }
         if isUpdatingNotes || isAsking || isStarting || isAnswering { return .thinking }
         if justFinishedNotes { return .done }
-        return isRecording ? .listening : .idle
+        return isRecording || demo ? .listening : .idle
     }
 
     var selected: ClassSession? {
@@ -114,7 +136,8 @@ final class AppModel {
 
     @discardableResult
     func newSession() -> ClassSession {
-        let title = "Class, " + Date().formatted(.dateTime.weekday(.wide).month().day().hour().minute())
+        let title = ProcessInfo.processInfo.environment["NIMBUS_DEMO_TITLE"]
+            ?? "Class, " + Date().formatted(.dateTime.weekday(.wide).month().day().hour().minute())
         let session = ClassSession(title: title)
         sessions.insert(session, at: 0)
         selectedID = session.id
@@ -273,6 +296,18 @@ final class AppModel {
 
     func keepBubble() { hideBubbleTask?.cancel() }
 
+    /// Screenshot mode: fake voice levels so the cloud's mouth moves.
+    func startDemoLevels() {
+        Task {
+            var t = 0.0
+            while true {
+                t += 0.08
+                if !isRecording { level = Float(0.35 + 0.3 * abs(sin(t * 3))) }
+                try? await Task.sleep(for: .milliseconds(80))
+            }
+        }
+    }
+
     /// Demo for screenshots: streams a canned answer into the bubble.
     func demoBubble() {
         var a = LiveAnswer(question: "Why do you think a country would give up some of its sovereignty?", at: 0)
@@ -314,7 +349,7 @@ final class AppModel {
 
     private var server: NotesClient { NotesClient(baseURL: serverURL) }
     private var gemini: GeminiDirect? {
-        provider == .gemini && !googleKey.isEmpty ? GeminiDirect(apiKey: googleKey, brain: brain) : nil
+        provider == .gemini && !effectiveGoogleKey.isEmpty ? GeminiDirect(apiKey: effectiveGoogleKey, brain: brain) : nil
     }
     private var claude: ClaudeDirect? {
         provider == .claude && !apiKey.isEmpty ? ClaudeDirect(apiKey: apiKey, brain: brain) : nil

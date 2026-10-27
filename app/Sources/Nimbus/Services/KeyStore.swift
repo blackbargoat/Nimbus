@@ -15,6 +15,13 @@ enum KeyStore {
 (try? String(contentsOf: url, encoding: .utf8))?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
     }
 
+    /// A Google key shipped inside the app so Nimbus works right after download.
+    static let bundledGoogle: String = {
+        guard let url = Bundle.main.url(forResource: "bundled-google-key", withExtension: nil),
+              let key = try? String(contentsOf: url, encoding: .utf8) else { return "" }
+        return key.trimmingCharacters(in: .whitespacesAndNewlines)
+    }()
+
     static func save(_ key: String, as name: Name) {
         let url = url(name)
         let trimmed = key.trimmingCharacters(in: .whitespacesAndNewlines)

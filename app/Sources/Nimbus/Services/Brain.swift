@@ -60,9 +60,34 @@ enum Brain {
         if !n.homework.isEmpty { line += ". Due: \(n.homework.joined(separator: "; "))" }
         var brain = load()
         guard !brain.contains(line) else { return }
+        // New words from class go on the spelling list so future notes get them right.
+        let known = brain.lowercased()
+        let newTerms = n.keyTerms.map(\.term).filter { !known.contains($0.lowercased()) }
+        if !newTerms.isEmpty {
+            let block = newTerms.map { "- \($0)\n" }.joined()
+            brain = insert(block, under: "## Names and words to spell right", in: brain)
+        }
         if !brain.contains("## What Nimbus learned") { brain += "\n\n## What Nimbus learned\n" }
         brain = brain.trimmingCharacters(in: .whitespacesAndNewlines) + "\n" + line + "\n"
         save(brain)
+    }
+
+    /// Builds a brain from onboarding answers.
+    static func make(grade: String, classes: [String], styles: [String], sample: String) -> String {
+        var out = "# Nimbus Brain\n\nNimbus reads this before every note, answer, and question. Edit anything. Nimbus adds to it after each class.\n\n## About me\n"
+        if !grade.isEmpty { out += "- \(grade)\n" }
+        if !classes.isEmpty { out += "- Classes: \(classes.joined(separator: ", "))\n" }
+        out += "\n## How to write my notes\n- Write like a real high school student, not a teacher or a textbook\n"
+        out += styles.map { "- \($0)\n" }.joined()
+        out += "- Put anything due or on a test at the top\n"
+        out += "\n## Names and words to spell right\n"
+        let trimmed = sample.trimmingCharacters(in: .whitespacesAndNewlines)
+        out += "\n## Class materials\n"
+        if !trimmed.isEmpty {
+            out += "\n### Example of how I write notes (copy this style)\n" + String(trimmed.prefix(6000)) + "\n"
+        }
+        out += "\n## What Nimbus learned\n"
+        return out
     }
 
     private static func insert(_ block: String, under heading: String, in brain: String) -> String {

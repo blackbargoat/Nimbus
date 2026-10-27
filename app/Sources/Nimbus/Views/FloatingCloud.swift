@@ -59,7 +59,7 @@ struct FloatingCloud: View {
                 .gesture(drag)
                 .help("Click to open your notes. Drag to move me.")
 
-            if hovering || model.isRecording || model.isStarting {
+            if hovering || model.isRecording || model.isStarting || model.demo {
                 controls.transition(.scale(scale: 0.8).combined(with: .opacity))
             }
         }
@@ -80,15 +80,15 @@ struct FloatingCloud: View {
             Button {
                 model.toggleRecording()
             } label: {
-                Image(systemName: model.isRecording ? "stop.fill" : "mic.fill")
+                Image(systemName: model.isRecording || model.demo ? "stop.fill" : "mic.fill")
                     .font(.system(size: 12, weight: .bold))
                     .frame(width: 26, height: 26)
             }
             .buttonStyle(.glassProminent)
-            .tint(model.isRecording ? Color(red: 1, green: 0.36, blue: 0.42) : Theme.skyDeep)
+            .tint(model.isRecording || model.demo ? Color(red: 1, green: 0.36, blue: 0.42) : Theme.skyDeep)
             .buttonBorderShape(.circle)
 
-            if model.isRecording {
+            if model.isRecording || model.demo {
                 Button {
                     model.helpMeAnswer()
                 } label: {
@@ -104,7 +104,7 @@ struct FloatingCloud: View {
             }
 
             TimelineView(.periodic(from: .now, by: 1)) { ctx in
-                Text(model.isStarting ? "Getting ready" : model.isRecording
+                Text(model.demo && !model.isRecording ? "12:48" : model.isStarting ? "Getting ready" : model.isRecording
                      ? ClassSession.clock(model.elapsed(at: ctx.date)) : "Listen")
                     .font(.system(size: 12, weight: .semibold, design: .rounded).monospacedDigit())
                     .foregroundStyle(Theme.ink)
