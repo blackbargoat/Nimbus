@@ -113,7 +113,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 await model.ask("What did I miss in the last 5 minutes?")
             case "notes":
                 // Live transcription runs from NIMBUS_TEST_AUDIO; write notes partway through.
-                try? await Task.sleep(for: .seconds(16))
+                try? await Task.sleep(for: .seconds(33))
                 await model.updateNotes()
             case "brain":
                 try? await Task.sleep(for: .seconds(1))

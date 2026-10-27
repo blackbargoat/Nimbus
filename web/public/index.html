@@ -42,65 +42,34 @@
     </div>
   </section>
 
-  <section class="demo" id="demo">
-    <div class="demo-pin">
-      <div class="captions" aria-live="polite">
-        <p class="cap c0">Press listen.</p>
-        <p class="cap c1">It hears class.</p>
-        <p class="cap c2">Notes write themselves.</p>
-        <p class="cap c3">It helps you answer.</p>
-        <p class="cap c4">One tiny cloud.</p>
-      </div>
-      <div class="screen-frame">
-        <div class="screen">
-          <div class="camera">
-            <div class="stage">
-              <div class="wall"><span class="wpuff w1"></span><span class="wpuff w2"></span><span class="wpuff w3"></span></div>
-              <div class="menubar"><b></b><i>Nimbus</i><i>Class</i><i>Edit</i><span>Mon 9:41</span></div>
+  <section class="demos" id="demo">
+    <article class="zdemo" data-mood="listening">
+      <h2>It listens.</h2>
+      <div class="zframe"><div class="cam" data-cam="0,600,400,1.04|3,955,630,2.9|17,955,630,2.9|20.5,600,400,1.04">
+        <video src="media/live-demo.mp4" muted playsinline preload="metadata" data-start="0" data-end="21"></video>
+      </div></div>
+    </article>
 
-              <div class="win">
-                <div class="win-bar"><i></i><i></i><i></i></div>
-                <aside class="win-side">
-                  <p>Your classes</p>
-                  <div class="sel"><span class="rec"></span>Global Politics</div>
-                  <div>Chemistry</div><div>Spanish 3</div><div>Lang and Lit</div>
-                </aside>
-                <div class="win-main">
-                  <h4>Challenges to sovereignty</h4>
-                  <div class="tabs"><span class="on">Notes</span><span>Live</span><span>Transcript</span><span>Ask</span></div>
-                  <div class="note big n1"><em>Big picture</em>States lose some control from above (EU) and below (cartels, separatists).</div>
-                  <div class="note due n2"><em>Due</em>✓ Notebook check, Wed Oct 28</div>
-                  <div class="note n3"><b>From above</b><ul><li>Supranational = rules bind members</li><li>EU = pooled sovereignty</li><li>Brexit -> "take back control"</li></ul></div>
-                  <div class="note n4"><b>From below</b><ul><li>Non-state actors weaken states</li><li>Separatists want own state</li><li>TNCs > some countries</li></ul></div>
-                </div>
-              </div>
+    <article class="zdemo" data-mood="thinking">
+      <h2>Teacher asks? It helps.</h2>
+      <div class="zframe"><div class="cam" data-cam="0,780,430,1.15|2.5,985,430,1.9|15,985,430,1.9|17.5,700,300,1.2">
+        <video src="media/live-demo.mp4" muted playsinline preload="metadata" data-start="24" data-end="42"></video>
+      </div></div>
+    </article>
 
-              <div class="live">
-                <span class="wave"><i></i><i></i><i></i><i></i><i></i></span>
-                <p class="l1">"Today we're looking at challenges to sovereignty."</p>
-                <p class="l2">"The EU is supranational, so its rules bind everyone."</p>
-                <p class="l3">"Notebooks are due Wednesday."</p>
-              </div>
+    <article class="zdemo" data-mood="happy">
+      <h2>Notes write themselves.</h2>
+      <div class="zframe"><div class="cam" data-cam="0,560,370,1|2,550,220,1.7|5,550,330,1.7|8,550,440,1.7|11,550,535,1.7|13.5,560,370,1">
+        <img src="media/notes.jpg" alt="Nimbus notes: big picture, bullet sections, plain words, key terms" data-loop="14">
+      </div></div>
+    </article>
 
-              <div class="thought">
-                <svg class="thought-bg" viewBox="0 0 340 210" aria-hidden="true"><use href="#thought"/></svg>
-                <div class="thought-in">
-                  <p class="tq">👂 "Why would a country give up sovereignty?"</p>
-                  <p class="ta"><b>Say:</b> Teaming up gets them stuff they can't get alone, like trade deals and safety.</p>
-                  <p class="tk"><b>Key idea:</b> pooled sovereignty</p>
-                </div>
-                <span class="tdot d1"></span><span class="tdot d2"></span>
-              </div>
-
-              <div class="nimbus">
-                <svg viewBox="0 0 128 92" aria-hidden="true"><use href="#cloud" fill="url(#body)"/><g fill="#121f3d"><rect x="54" y="50" width="7" height="11" rx="3.5"/><rect x="70" y="50" width="7" height="11" rx="3.5"/></g><g class="mouth" fill="#2274e8"><rect x="58" y="66" width="3" height="6" rx="1.5"/><rect x="63" y="64" width="3" height="10" rx="1.5"/><rect x="68" y="66" width="3" height="6" rx="1.5"/></g></svg>
-                <span class="mic"><i></i></span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+    <article class="zdemo" data-mood="happy">
+      <h2>Every question, saved.</h2>
+      <div class="zframe"><div class="cam" data-cam="0,560,370,1|2,700,255,1.75|6,700,255,1.75|8,1000,400,1.8|11,1000,400,1.8|13.5,560,370,1">
+        <img src="media/live.jpg" alt="Live answers tab with the teacher's question and Nimbus's answer" data-loop="14">
+      </div></div>
+    </article>
   </section>
 
   <section class="tiles">
@@ -138,18 +107,31 @@
   </section>
 </main>
 
+<a class="buddy" href="#top" aria-label="Back to top">
+  <svg viewBox="-6 -22 140 120" aria-hidden="true">
+    <use href="#cloud" fill="url(#body)"/>
+    <use href="#cloud" fill="url(#shade)"/>
+    <g class="m-eyes" fill="#121f3d"><rect class="eye" x="52" y="50" width="7" height="11" rx="3.5"/><rect class="eye" x="69" y="50" width="7" height="11" rx="3.5"/></g>
+    <g class="m-happy" fill="none" stroke="#121f3d" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M51 58 l4.5 -5 l4.5 5"/><path d="M68 58 l4.5 -5 l4.5 5"/></g>
+    <rect class="m-idle" x="59.5" y="67" width="9" height="3" rx="1.5" fill="#121f3d" opacity=".85"/>
+    <g class="m-listen" fill="#2274e8"><rect x="56" y="65" width="3" height="7" rx="1.5"/><rect x="61" y="63" width="3" height="11" rx="1.5"/><rect x="66" y="64" width="3" height="9" rx="1.5"/><rect x="71" y="66" width="3" height="5" rx="1.5"/></g>
+    <g class="m-smile"><rect x="57" y="66" width="14" height="4" rx="2" fill="#121f3d"/><rect x="60.5" y="67.5" width="7" height="2" rx="1" fill="#f472a6"/></g>
+    <g class="m-think" fill="#2274e8"><circle cx="54" cy="-8" r="3.5"/><circle cx="64" cy="-8" r="3.5"/><circle cx="74" cy="-8" r="3.5"/></g>
+    <circle class="m-rec" cx="102" cy="30" r="4.5" fill="#ff5c6b"/>
+  </svg>
+</a>
+
 <footer class="foot"><span>Nimbus</span><span>Ask before recording class.</span></footer>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <defs>
+    <linearGradient id="shade" gradientUnits="userSpaceOnUse" x1="0" y1="46" x2="0" y2="92"><stop offset="0" stop-color="#52a8fa" stop-opacity="0"/><stop offset="1" stop-color="#52a8fa" stop-opacity=".3"/></linearGradient>
     <linearGradient id="body" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2="92"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#e3eeff"/></linearGradient>
     <g id="cloud"><circle cx="23.0" cy="60.7" r="17.9"/><circle cx="46.1" cy="42.3" r="24.3"/><circle cx="74.2" cy="33.1" r="29.4"/><circle cx="99.8" cy="47.8" r="21.8"/><circle cx="112.6" cy="64.4" r="14.1"/><circle cx="38.4" cy="79.1" r="11.5"/><circle cx="70.4" cy="81.0" r="12.8"/><circle cx="97.3" cy="79.1" r="10.9"/><rect x="7.7" y="50.6" width="112.6" height="34" rx="16.6"/></g>
     <g id="thought" fill="#fff"><rect x="18" y="22" width="304" height="166" rx="40"/><circle cx="50" cy="30" r="28"/><circle cx="100" cy="22" r="30"/><circle cx="155" cy="20" r="30"/><circle cx="210" cy="22" r="30"/><circle cx="262" cy="26" r="29"/><circle cx="305" cy="45" r="26"/><circle cx="320" cy="100" r="22"/><circle cx="308" cy="160" r="26"/><circle cx="260" cy="186" r="24"/><circle cx="205" cy="190" r="24"/><circle cx="150" cy="190" r="24"/><circle cx="95" cy="188" r="24"/><circle cx="42" cy="170" r="26"/><circle cx="20" cy="110" r="22"/></g>
   </defs>
 </svg>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
 <script src="app.js" defer></script>
 </body>
 </html>
