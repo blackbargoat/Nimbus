@@ -10,70 +10,57 @@
 <meta property="og:image" content="icon-512.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css">
+<link href="https://fonts.googleapis.com/css2?family=Jersey+10&family=Nunito:wght@500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css?v=8bit5">
 </head>
 <body>
 
 <header class="nav">
-  <a class="brand" href="#top"><svg viewBox="0 0 128 92" aria-hidden="true"><use href="#cloud"/></svg>Nimbus</a>
-  <a class="btn btn-dark btn-sm" href="https://github.com/blackbargoat/Nimbus/releases/latest/download/Nimbus.dmg">Download</a>
+  <a class="brand" href="#top"><img src="media/pixel/nimbus-idle.png" alt="">Nimbus</a>
+  <a class="btn px btn-dark btn-sm" href="https://github.com/blackbargoat/Nimbus/releases/latest/download/Nimbus.dmg">Download</a>
 </header>
 
 <main id="top">
   <section class="hero">
-    <div class="sky" aria-hidden="true">
-      <span class="puff p1"></span><span class="puff p2"></span><span class="puff p3"></span>
-      <span class="puff p4"></span><span class="puff p5"></span>
-    </div>
+    <div class="sky" aria-hidden="true"><div class="sky-far"></div><div class="sky-near"></div></div>
     <div class="hero-inner">
-      <div class="mascot" aria-hidden="true">
-        <svg viewBox="0 0 128 92"><use href="#cloud" fill="url(#body)"/><g class="eyes" fill="#121f3d"><rect x="54" y="50" width="7" height="11" rx="3.5"/><rect x="70" y="50" width="7" height="11" rx="3.5"/></g><path d="M60 67 q6 5 12 0" stroke="#121f3d" stroke-width="3" fill="none" stroke-linecap="round"/></svg>
-      </div>
+      <div class="mascot" aria-hidden="true"><img src="media/pixel/nimbus-happy.png" alt=""></div>
       <h1>Class notes,<br>on autopilot.</h1>
       <div class="cta-row">
-        <a class="btn btn-dark btn-lg" href="https://github.com/blackbargoat/Nimbus/releases/latest/download/Nimbus.dmg">
+        <a class="btn px btn-dark btn-lg" href="https://github.com/blackbargoat/Nimbus/releases/latest/download/Nimbus.dmg">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16.4 12.6c0-2.6 2.1-3.8 2.2-3.9-1.2-1.8-3.1-2-3.7-2-1.6-.2-3.1.9-3.9.9-.8 0-2-.9-3.4-.9-1.7 0-3.3 1-4.2 2.6-1.8 3.1-.5 7.7 1.3 10.2.9 1.2 1.9 2.6 3.2 2.6 1.3-.1 1.8-.8 3.3-.8 1.6 0 2 .8 3.4.8 1.4 0 2.3-1.3 3.1-2.5 1-1.4 1.4-2.8 1.4-2.9-.1 0-2.7-1-2.7-4.1zM13.9 5c.7-.9 1.2-2.1 1.1-3.3-1 0-2.3.7-3 1.6-.7.8-1.3 2-1.1 3.2 1.1.1 2.3-.6 3-1.5z"/></svg>
           Download for Mac
         </a>
       </div>
-      <p class="fine">Free · macOS 26+</p>
-      <a class="scroll-hint" href="#demo" aria-label="See the demo"><span></span></a>
+      <p class="fine">Free · macOS 26+ · <a href="#install">first time opening?</a></p>
     </div>
   </section>
 
   <section class="demos" id="demo">
     <article class="zdemo" data-mood="listening">
-      <h2>It listens.</h2>
-      <div class="zframe"><div class="cam" data-cam="0,600,400,1.04|3,955,630,2.9|17,955,630,2.9|20.5,600,400,1.04">
-        <video src="media/live-demo.mp4" muted playsinline preload="metadata" data-start="0" data-end="21"></video>
-      </div></div>
+      <h2>Teacher asks? It helps.</h2>
+      <div class="zwrap"><div class="zframe"><div class="cam" data-cam="0,560,370,1|2.5,823,470,1.75|9,823,470,1.75|11.5,560,370,1">
+        <img src="media/live.jpg?v=2" alt="Nimbus pops up a short answer by the floating cloud when the teacher asks a question" data-loop="13">
+      </div></div></div>
+    </article>
+
+    <article class="zdemo" data-mood="happy">
+      <h2>Notes you can see.</h2>
+      <div class="zwrap"><div class="zframe"><div class="cam" data-cam="0,560,370,1|2.5,600,600,1.7|7,600,600,1.7|9,420,445,1.6|11.5,420,445,1.6|13.5,560,370,1">
+        <img src="media/notes.jpg?v=2" alt="Visual notes: a cause and effect chain, due dates, and a summary" data-loop="15">
+      </div></div></div>
     </article>
 
     <article class="zdemo" data-mood="thinking">
-      <h2>Teacher asks? It helps.</h2>
-      <div class="zframe"><div class="cam" data-cam="0,780,430,1.15|2.5,985,430,1.9|15,985,430,1.9|17.5,700,300,1.2">
-        <video src="media/live-demo.mp4" muted playsinline preload="metadata" data-start="24" data-end="42"></video>
-      </div></div>
-    </article>
-
-    <article class="zdemo" data-mood="happy">
-      <h2>Notes write themselves.</h2>
-      <div class="zframe"><div class="cam" data-cam="0,560,370,1|2,550,220,1.7|5,550,330,1.7|8,550,440,1.7|11,550,535,1.7|13.5,560,370,1">
-        <img src="media/notes.jpg" alt="Nimbus notes: big picture, bullet sections, plain words, key terms" data-loop="14">
-      </div></div>
-    </article>
-
-    <article class="zdemo" data-mood="happy">
-      <h2>Every question, saved.</h2>
-      <div class="zframe"><div class="cam" data-cam="0,560,370,1|2,700,255,1.75|6,700,255,1.75|8,1000,400,1.8|11,1000,400,1.8|13.5,560,370,1">
-        <img src="media/live.jpg" alt="Live answers tab with the teacher's question and Nimbus's answer" data-loop="14">
-      </div></div>
+      <h2>Ask about class.</h2>
+      <div class="zwrap"><div class="zframe"><div class="cam" data-cam="0,560,370,1|2.5,560,350,1.6|9,560,350,1.6|11.5,560,370,1">
+        <img src="media/ask.jpg?v=2" alt="Asking Nimbus what is on the quiz and getting a bullet answer" data-loop="13">
+      </div></div></div>
     </article>
   </section>
 
   <section class="tiles">
-    <article class="tile t-brain reveal">
+    <article class="tile px t-brain reveal">
       <div class="file">
         <p class="fname">brain.md</p>
         <p class="hl"># How to write my notes</p>
@@ -84,18 +71,18 @@
       </div>
       <h3>Learns how you write.</h3>
     </article>
-    <article class="tile t-ask reveal">
+    <article class="tile px t-ask reveal">
       <div class="chat">
         <p class="me">what did I miss?</p>
         <p class="bot">Notebooks are due Wednesday.</p>
       </div>
       <h3>Ask about class.</h3>
     </article>
-    <article class="tile t-private reveal">
+    <article class="tile px t-private reveal">
       <div class="lock"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10V7a5 5 0 0 1 10 0v3h1a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V11a1 1 0 0 1 1-1h1zm2 0h6V7a3 3 0 0 0-6 0v3z"/></svg></div>
       <h3>Audio stays on your Mac.</h3>
     </article>
-    <article class="tile t-copy reveal">
+    <article class="tile px t-copy reveal">
       <div class="paste"><span class="doc"></span><span class="arrow">→</span><span class="gdoc">Docs</span></div>
       <h3>One-click copy.</h3>
     </article>
@@ -103,23 +90,17 @@
 
   <section class="final">
     <h2>Let the cloud<br>take notes.</h2>
-    <a class="btn btn-dark btn-lg" href="https://github.com/blackbargoat/Nimbus/releases/latest/download/Nimbus.dmg">Download Nimbus</a>
+    <a class="btn px btn-dark btn-lg" href="https://github.com/blackbargoat/Nimbus/releases/latest/download/Nimbus.dmg">Download Nimbus</a>
+    <ol class="steps" id="install">
+      <li class="px"><b>1</b>Drag Nimbus into Applications.</li>
+      <li class="px"><b>2</b>Open it. Your Mac will block it the first time.</li>
+      <li class="px"><b>3</b>System Settings, Privacy &amp; Security, Open Anyway.</li>
+    </ol>
+    <p class="fine">Any Mac on macOS 26 or newer, Apple silicon or Intel</p>
   </section>
 </main>
 
-<a class="buddy" href="#top" aria-label="Back to top">
-  <svg viewBox="-6 -22 140 120" aria-hidden="true">
-    <use href="#cloud" fill="url(#body)"/>
-    <use href="#cloud" fill="url(#shade)"/>
-    <g class="m-eyes" fill="#121f3d"><rect class="eye" x="52" y="50" width="7" height="11" rx="3.5"/><rect class="eye" x="69" y="50" width="7" height="11" rx="3.5"/></g>
-    <g class="m-happy" fill="none" stroke="#121f3d" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M51 58 l4.5 -5 l4.5 5"/><path d="M68 58 l4.5 -5 l4.5 5"/></g>
-    <rect class="m-idle" x="59.5" y="67" width="9" height="3" rx="1.5" fill="#121f3d" opacity=".85"/>
-    <g class="m-listen" fill="#2274e8"><rect x="56" y="65" width="3" height="7" rx="1.5"/><rect x="61" y="63" width="3" height="11" rx="1.5"/><rect x="66" y="64" width="3" height="9" rx="1.5"/><rect x="71" y="66" width="3" height="5" rx="1.5"/></g>
-    <g class="m-smile"><rect x="57" y="66" width="14" height="4" rx="2" fill="#121f3d"/><rect x="60.5" y="67.5" width="7" height="2" rx="1" fill="#f472a6"/></g>
-    <g class="m-think" fill="#2274e8"><circle cx="54" cy="-8" r="3.5"/><circle cx="64" cy="-8" r="3.5"/><circle cx="74" cy="-8" r="3.5"/></g>
-    <circle class="m-rec" cx="102" cy="30" r="4.5" fill="#ff5c6b"/>
-  </svg>
-</a>
+<a class="buddy px" href="#top" aria-label="Back to top"><img src="media/pixel/nimbus-happy.png" alt=""></a>
 
 <footer class="foot"><span>Nimbus</span><span>Ask before recording class.</span></footer>
 
@@ -132,6 +113,6 @@
   </defs>
 </svg>
 
-<script src="app.js" defer></script>
+<script src="app.js?v=8bit5" defer></script>
 </body>
 </html>

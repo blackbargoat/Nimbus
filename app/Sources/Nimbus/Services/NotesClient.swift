@@ -16,9 +16,9 @@ struct NotesClient {
 
     var baseURL: String
 
-    func notes(for session: ClassSession) async throws -> ClassNotes {
-        struct Body: Encodable { let title: String; let transcript: [String] }
-        return try await post("api/notes", Body(title: session.title, transcript: session.transcriptChunks()))
+    func notes(for session: ClassSession, style: NoteStyle) async throws -> ClassNotes {
+        struct Body: Encodable { let title: String; let transcript: [String]; let style: String }
+        return try await post("api/notes", Body(title: session.title, transcript: session.transcriptChunks(), style: style.rawValue))
     }
 
     func ask(_ question: String, in session: ClassSession) async throws -> String {
@@ -41,7 +41,7 @@ struct NotesClient {
     }
 
     /// Streams a short answer to a question the teacher just asked.
-    func answer(_ question: String, in session: ClassSession) -> AsyncThrowingStream<String, Error> {
+    func answer(_ question: String, in session: ClassSession, help: Bool = false) -> AsyncThrowingStream<String, Error> {
         struct Body: Encodable {
             let title: String
             let transcript: [String]

@@ -7,7 +7,7 @@ import Observation
 final class AppModel {
     static let shared = AppModel()
 
-    enum CloudMood { case idle, listening, thinking, done }
+    enum CloudMood { case idle, listening, thinking, done, oops }
 
     var sessions: [ClassSession] = SessionStore.loadAll()
     var selectedID: UUID?
@@ -24,6 +24,10 @@ final class AppModel {
     /// The answer showing in the bubble next to the cloud.
     var liveAnswer: LiveAnswer?
     var isAnswering = false
+    /// When the bubble floats away. Nil while it's pinned, hovered, or still writing.
+    var bubbleDeadline: Date?
+    var bubbleLifetime: TimeInterval = 1
+    var bubblePinned = false
 
     @ObservationIgnored let defaults = UserDefaults.standard
     var serverURL: String {
@@ -32,6 +36,11 @@ final class AppModel {
     /// Minutes between automatic note updates while recording.
     var autoNotesMinutes: Double {
         didSet { defaults.set(autoNotesMinutes, forKey: "autoNotesMinutes") }
+    }
+
+    /// How notes are written: visual, full bullets, or short.
+    var noteStyle: NoteStyle = NoteStyle(rawValue: UserDefaults.standard.string(forKey: "noteStyle") ?? "") ?? .visual {
+        didSet { defaults.set(noteStyle.rawValue, forKey: "noteStyle") }
     }
 
     /// Answer the teacher's questions automatically while listening.
@@ -118,7 +127,8 @@ final class AppModel {
         }
         if isUpdatingNotes || isAsking || isStarting || isAnswering { return .thinking }
         if justFinishedNotes { return .done }
-        return isRecording || demo ? .listening : .idle
+        if isRecording || demo { return .listening }
+        return message != nil ? .oops : .idle
     }
 
     var selected: ClassSession? {
@@ -227,10 +237,13 @@ final class AppModel {
     private func appendLine(_ text: String, at: TimeInterval) {
         guard let id = recordingSessionID else { return }
         update(id) { $0.lines.append(TranscriptLine(text: text, at: at)) }
-        if liveAnswersOn, !isAnswering, Date().timeIntervalSince(lastAutoAnswer) > 20,
-           QuestionDetector.isQuestion(text) {
+        guard liveAnswersOn, !isAnswering, Date().timeIntervalSince(lastAutoAnswer) > 15,
+              let session = sessions.first(where: { $0.id == id }) else { return }
+        // A question can be split over two lines, so check them together too.
+        let previous = session.lines.dropLast().last.map { $0.text } ?? ""
+        if let q = QuestionDetector.question(in: text) ?? QuestionDetector.question(in: previous + " " + text) {
             lastAutoAnswer = Date()
-            answerLive(text, at: at, auto: true)
+            answerLive(q, at: at, auto: true)
         }
     }
 
@@ -239,7 +252,9 @@ final class AppModel {
     /// "Help me answer": treat the last thing the teacher said as the question.
     func helpMeAnswer() {
         guard let session = sessions.first(where: { $0.id == (recordingSessionID ?? selectedID) }) else { return }
-        let recent = session.lines.suffix(2).map(\.text).joined(separator: " ")
+        // About the last minute of class, plus whatever is being said right now.
+        let last = session.lines.last?.at ?? 0
+        let recent = session.lines.filter { $0.at >= last - 60 }.suffix(6).map(\.text).joined(separator: " ")
         let question = [recent, partial].filter { !$0.isEmpty }.joined(separator: " ")
         guard !question.isEmpty else {
             message = "I haven't heard anything yet. Start listening first."
@@ -253,22 +268,25 @@ final class AppModel {
               let session = sessions.first(where: { $0.id == id }) else { return }
         answerTask?.cancel()
         hideBubbleTask?.cancel()
-        var answer = LiveAnswer(question: question, at: at)
+        bubbleDeadline = nil
+        bubblePinned = false
+        var answer = LiveAnswer(question: auto ? question : "Help me answer", at: at)
         liveAnswer = answer
         isAnswering = true
         answerTask = Task {
             do {
-                for try await chunk in try streamLiveAnswer(question, session) {
+                for try await chunk in try streamLiveAnswer(question, session, help: !auto) {
                     answer.answer += chunk
                     if liveAnswer?.id == answer.id { liveAnswer = answer }
                 }
                 answer.isDone = true
                 let text = answer.answer.trimmingCharacters(in: .whitespacesAndNewlines)
-                if text.hasPrefix("SKIP") {
+                if auto && text.hasPrefix("SKIP") {
                     if liveAnswer?.id == answer.id { liveAnswer = nil }
-                    if !auto { message = "That didn't sound like a question to the class." }
                 } else {
-                    answer.answer = text
+                    answer.answer = text.hasPrefix("SKIP") ? "I couldn't catch a question just now. Try again right after the teacher asks." : text
+                    // Help answers name the question they picked.
+                    if let q = Self.pickedQuestion(in: answer.answer) { answer.question = q }
                     if liveAnswer?.id == answer.id { liveAnswer = answer }
                     update(id) { $0.answers.append(answer) }
                     scheduleBubbleHide(answer.id)
@@ -284,17 +302,52 @@ final class AppModel {
         }
     }
 
+    /// Pulls "Q: ..." out of a help answer.
+    private static func pickedQuestion(in answer: String) -> String? {
+        guard let line = answer.split(separator: "\n").first(where: { $0.contains("Q:**") || $0.hasPrefix("Q:") }) else { return nil }
+        let q = line.replacingOccurrences(of: "**Q:**", with: "").replacingOccurrences(of: "Q:", with: "")
+            .trimmingCharacters(in: .whitespaces)
+        return q.isEmpty ? nil : q
+    }
+
+    /// How long a finished answer stays up: long enough to read it twice and say it,
+    /// so longer answers stay longer. 30 seconds at least, 2 minutes at most.
+    static func readingTime(_ text: String) -> TimeInterval {
+        let words = Double(text.split(whereSeparator: \.isWhitespace).count)
+        return min(120, max(30, 12 + words * 0.9))
+    }
+
     /// Bubble hangs around long enough to read, then floats away.
-    func scheduleBubbleHide(_ id: UUID, after seconds: Double = 45) {
+    func scheduleBubbleHide(_ id: UUID, after seconds: Double? = nil) {
         hideBubbleTask?.cancel()
+        guard !bubblePinned, let answer = liveAnswer, answer.id == id else { return }
+        let wait = seconds ?? Self.readingTime(answer.answer)
+        bubbleLifetime = wait
+        bubbleDeadline = Date().addingTimeInterval(wait)
         hideBubbleTask = Task {
-            try? await Task.sleep(for: .seconds(seconds))
-            guard !Task.isCancelled, liveAnswer?.id == id else { return }
+            try? await Task.sleep(for: .seconds(wait))
+            guard !Task.isCancelled, liveAnswer?.id == id, !bubblePinned else { return }
             liveAnswer = nil
+            bubbleDeadline = nil
         }
     }
 
-    func keepBubble() { hideBubbleTask?.cancel() }
+    /// Mouse is over the bubble: hold it still.
+    func keepBubble() {
+        hideBubbleTask?.cancel()
+        bubbleDeadline = nil
+    }
+
+    /// Mouse left: give them at least another 20 seconds.
+    func releaseBubble() {
+        guard let a = liveAnswer, a.isDone, !bubblePinned else { return }
+        scheduleBubbleHide(a.id, after: max(20, Self.readingTime(a.answer) / 2))
+    }
+
+    func togglePin() {
+        bubblePinned.toggle()
+        if bubblePinned { keepBubble() } else { releaseBubble() }
+    }
 
     /// Screenshot mode: fake voice levels so the cloud's mouth moves.
     func startDemoLevels() {
@@ -310,11 +363,11 @@ final class AppModel {
 
     /// Demo for screenshots: streams a canned answer into the bubble.
     func demoBubble() {
-        var a = LiveAnswer(question: "Why do you think a country would give up some of its sovereignty?", at: 0)
+        var a = LiveAnswer(question: "Why do you think plants close their stomata on really hot days?", at: 0)
         liveAnswer = a
         Task {
             try? await Task.sleep(for: .seconds(1.5))
-            let text = "**Say:** Because teaming up gets them stuff they can't get alone, like trade deals and safety.\n- EU members get the single market, so it's cheaper to trade\n- Together they have more say than one small country\n**Key idea:** pooled sovereignty"
+            let text = "**Say:** So they don't dry out. Open stomata let water escape, and on a hot day they'd lose way too much.\n- Closing them keeps water in\n- But less CO2 gets in, so less sugar\n**Key idea:** water vs CO2 tradeoff"
             for word in text.split(separator: " ", omittingEmptySubsequences: false) {
                 a.answer += (a.answer.isEmpty ? "" : " ") + word
                 liveAnswer = a
@@ -327,6 +380,8 @@ final class AppModel {
 
     func dismissBubble() {
         hideBubbleTask?.cancel()
+        bubbleDeadline = nil
+        bubblePinned = false
         liveAnswer = nil
     }
 
@@ -363,9 +418,9 @@ final class AppModel {
 
     private func fetchNotes(_ s: ClassSession) async throws -> ClassNotes {
         try requireAI()
-        if let gemini { return try await gemini.notes(for: s) }
-        if let claude { return try await claude.notes(for: s) }
-        return try await server.notes(for: s)
+        if let gemini { return try await gemini.notes(for: s, style: noteStyle) }
+        if let claude { return try await claude.notes(for: s, style: noteStyle) }
+        return try await server.notes(for: s, style: noteStyle)
     }
 
     private func fetchAnswer(_ q: String, _ s: ClassSession) async throws -> String {
@@ -375,11 +430,11 @@ final class AppModel {
         return try await server.ask(q, in: s)
     }
 
-    private func streamLiveAnswer(_ q: String, _ s: ClassSession) throws -> AsyncThrowingStream<String, Error> {
+    private func streamLiveAnswer(_ q: String, _ s: ClassSession, help: Bool) throws -> AsyncThrowingStream<String, Error> {
         try requireAI()
-        if let gemini { return gemini.answer(q, in: s) }
-        if let claude { return claude.answer(q, in: s) }
-        return server.answer(q, in: s)
+        if let gemini { return gemini.answer(q, in: s, help: help) }
+        if let claude { return claude.answer(q, in: s, help: help) }
+        return server.answer(q, in: s, help: help)
     }
 
     func updateNotes(_ id: UUID? = nil) async {
@@ -393,6 +448,7 @@ final class AppModel {
             let notes = try await fetchNotes(session)
             update(id) {
                 $0.notes = notes
+                $0.notesStyle = noteStyle
                 $0.notesUpdatedAt = Date()
                 $0.notesLineCount = session.lines.count
             }
@@ -424,9 +480,36 @@ final class AppModel {
         }
     }
 
+    /// Switch note style and rewrite the selected class's notes in it.
+    func setNoteStyle(_ style: NoteStyle) {
+        noteStyle = style
+        guard let s = selected, !s.lines.isEmpty, s.notesStyle != style else { return }
+        Task { await updateNotes(s.id) }
+    }
+
+    /// Copies the notes with real formatting (headings, bullets, tables), so they
+    /// paste cleanly into Google Docs, Word, Pages, or Notion. Plain text as backup.
     func copyNotes() {
         guard let session = selected else { return }
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(session.markdown(), forType: .string)
+        let html = session.html()
+        let pb = NSPasteboard.general
+        pb.clearContents()
+        pb.setString(html, forType: .html)
+        if let data = html.data(using: .utf8),
+           let rich = try? NSAttributedString(data: data, options: [.documentType: NSAttributedString.DocumentType.html,
+                                                                     .characterEncoding: String.Encoding.utf8.rawValue],
+                                              documentAttributes: nil),
+           let rtf = rich.rtf(from: NSRange(location: 0, length: rich.length)) {
+            pb.setData(rtf, forType: .rtf)
+        }
+        pb.setString(session.plainText(), forType: .string)
+        copiedAt = Date()
+        Task {
+            try? await Task.sleep(for: .seconds(2))
+            copiedAt = nil
+        }
     }
+
+    /// Briefly set after copying, so the copy button can show a check.
+    var copiedAt: Date?
 }

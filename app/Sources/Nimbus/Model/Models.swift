@@ -8,9 +8,56 @@ struct TranscriptLine: Codable, Identifiable, Hashable {
     var at: TimeInterval
 }
 
+/// How the student wants notes written. Picked in the Notes tab.
+enum NoteStyle: String, Codable, CaseIterable, Identifiable {
+    case visual, bullets, short
+    var id: String { rawValue }
+    var label: String {
+        switch self {
+        case .visual: "Visual"
+        case .bullets: "Bullet points"
+        case .short: "Short"
+        }
+    }
+    var symbol: String {
+        switch self {
+        case .visual: "point.3.connected.trianglepath.dotted"
+        case .bullets: "list.bullet"
+        case .short: "text.alignleft"
+        }
+    }
+    var blurb: String {
+        switch self {
+        case .visual: "Chains, tables, and timelines so you can see how ideas connect."
+        case .bullets: "Full bullet notes, one idea per line, with every example."
+        case .short: "Just the stuff you need, in a few quick lines."
+        }
+    }
+}
+
+/// One block of notes. "kind" says how to draw it:
+/// bullets (a list), flow (steps or cause and effect, A -> B -> C),
+/// timeline (dated events), or compare (a small table).
 struct NoteSection: Codable, Hashable {
     var heading: String
-    var bullets: [String]
+    var kind: String = "bullets"
+    var bullets: [String] = []
+    var steps: [String] = []
+    var columns: [String] = []
+    var rows: [[String]] = []
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        heading = try c.decodeIfPresent(String.self, forKey: .heading) ?? ""
+        kind = try c.decodeIfPresent(String.self, forKey: .kind) ?? "bullets"
+        bullets = try c.decodeIfPresent([String].self, forKey: .bullets) ?? []
+        steps = try c.decodeIfPresent([String].self, forKey: .steps) ?? []
+        columns = try c.decodeIfPresent([String].self, forKey: .columns) ?? []
+        rows = try c.decodeIfPresent([[String]].self, forKey: .rows) ?? []
+        // Fall back to a plain list when a visual block came back empty.
+        if kind == "flow" || kind == "timeline", steps.isEmpty { kind = "bullets" }
+        if kind == "compare", columns.isEmpty || rows.isEmpty { kind = "bullets" }
+    }
 }
 
 struct KeyTerm: Codable, Hashable {
@@ -64,6 +111,7 @@ struct ClassSession: Codable, Identifiable, Hashable {
     var duration: TimeInterval = 0
     var lines: [TranscriptLine] = []
     var notes: ClassNotes?
+    var notesStyle: NoteStyle?
     var notesUpdatedAt: Date?
     /// How many transcript lines the current notes cover.
     var notesLineCount = 0
@@ -80,6 +128,7 @@ struct ClassSession: Codable, Identifiable, Hashable {
         duration = try c.decodeIfPresent(TimeInterval.self, forKey: .duration) ?? 0
         lines = try c.decodeIfPresent([TranscriptLine].self, forKey: .lines) ?? []
         notes = try c.decodeIfPresent(ClassNotes.self, forKey: .notes)
+        notesStyle = try c.decodeIfPresent(NoteStyle.self, forKey: .notesStyle)
         notesUpdatedAt = try c.decodeIfPresent(Date.self, forKey: .notesUpdatedAt)
         notesLineCount = try c.decodeIfPresent(Int.self, forKey: .notesLineCount) ?? 0
         chat = try c.decodeIfPresent([ChatMessage].self, forKey: .chat) ?? []
@@ -113,25 +162,69 @@ struct ClassSession: Codable, Identifiable, Hashable {
             : String(format: "%d:%02d", s / 60, s % 60)
     }
 
-    /// Notes as Markdown, for copying into Google Docs or a notebook.
-    func markdown() -> String {
-        var out = "# \(notes?.topic.isEmpty == false ? notes!.topic : title)\n\n"
-        out += createdAt.formatted(date: .long, time: .shortened) + "\n\n"
-        guard let n = notes else { return out + "_No notes yet._\n" }
-        out += "## Summary\n\(n.summary)\n\n"
+    var displayTitle: String { notes?.topic.isEmpty == false ? notes!.topic : title }
+
+    /// Notes as plain text with real bullets, for apps that don't take formatting.
+    func plainText() -> String {
+        var out = displayTitle + "\n" + createdAt.formatted(date: .long, time: .shortened) + "\n\n"
+        guard let n = notes else { return out + "No notes yet.\n" }
+        func list(_ title: String, _ items: [String]) {
+            guard !items.isEmpty else { return }
+            out += title + "\n" + items.map { "\u{2022} \($0)" }.joined(separator: "\n") + "\n\n"
+        }
+        list("Due", n.homework)
+        if !n.summary.isEmpty { out += n.summary + "\n\n" }
         for s in n.sections {
-            out += "## \(s.heading)\n" + s.bullets.map { "- \($0)" }.joined(separator: "\n") + "\n\n"
+            out += s.heading + "\n"
+            switch s.kind {
+            case "flow": out += s.steps.joined(separator: " \u{2192} ") + "\n"
+            case "timeline": out += s.steps.map { "\u{2022} \($0)" }.joined(separator: "\n") + "\n"
+            case "compare":
+                out += s.columns.joined(separator: " | ") + "\n"
+                out += s.rows.map { $0.joined(separator: " | ") }.joined(separator: "\n") + "\n"
+            default: break
+            }
+            if !s.bullets.isEmpty { out += s.bullets.map { "\u{2022} \($0)" }.joined(separator: "\n") + "\n" }
+            out += "\n"
+        }
+        list("Key terms", n.keyTerms.map { "\($0.term): \($0.meaning)" })
+        if !n.plainWords.isEmpty { out += "In plain words\n\(n.plainWords)\n\n" }
+        list("Quiz yourself", n.reviewQuestions)
+        return out
+    }
+
+    /// Notes as simple HTML: real headings, bullets, and tables when pasted
+    /// into Google Docs, Word, Pages, or Notion.
+    func html() -> String {
+        func e(_ s: String) -> String {
+            s.replacingOccurrences(of: "&", with: "&amp;").replacingOccurrences(of: "<", with: "&lt;")
+                .replacingOccurrences(of: ">", with: "&gt;")
+        }
+        func ul(_ items: [String]) -> String {
+            items.isEmpty ? "" : "<ul>" + items.map { "<li>\(e($0))</li>" }.joined() + "</ul>"
+        }
+        var out = "<meta charset=\"utf-8\"><h1>\(e(displayTitle))</h1><p><i>\(e(createdAt.formatted(date: .long, time: .shortened)))</i></p>"
+        guard let n = notes else { return out + "<p>No notes yet.</p>" }
+        if !n.homework.isEmpty { out += "<h3>Due</h3>" + ul(n.homework) }
+        if !n.summary.isEmpty { out += "<p>\(e(n.summary))</p>" }
+        for s in n.sections {
+            out += "<h2>\(e(s.heading))</h2>"
+            switch s.kind {
+            case "flow": out += "<p>" + s.steps.map(e).joined(separator: " &rarr; ") + "</p>"
+            case "timeline": out += ul(s.steps)
+            case "compare":
+                out += "<table border=\"1\" cellpadding=\"6\" style=\"border-collapse:collapse\"><tr>"
+                    + s.columns.map { "<th>\(e($0))</th>" }.joined() + "</tr>"
+                    + s.rows.map { "<tr>" + $0.map { "<td>\(e($0))</td>" }.joined() + "</tr>" }.joined() + "</table>"
+            default: break
+            }
+            out += ul(s.bullets)
         }
         if !n.keyTerms.isEmpty {
-            out += "## Key terms\n" + n.keyTerms.map { "- **\($0.term):** \($0.meaning)" }.joined(separator: "\n") + "\n\n"
+            out += "<h2>Key terms</h2><ul>" + n.keyTerms.map { "<li><b>\(e($0.term))</b>: \(e($0.meaning))</li>" }.joined() + "</ul>"
         }
-        if !n.plainWords.isEmpty { out += "## In plain words\n\(n.plainWords)\n\n" }
-        if !n.homework.isEmpty {
-            out += "## Homework and due dates\n" + n.homework.map { "- \($0)" }.joined(separator: "\n") + "\n\n"
-        }
-        if !n.reviewQuestions.isEmpty {
-            out += "## Quiz yourself\n" + n.reviewQuestions.map { "- \($0)" }.joined(separator: "\n") + "\n"
-        }
+        if !n.plainWords.isEmpty { out += "<h2>In plain words</h2><p>\(e(n.plainWords))</p>" }
+        if !n.reviewQuestions.isEmpty { out += "<h2>Quiz yourself</h2>" + ul(n.reviewQuestions) }
         return out
     }
 }

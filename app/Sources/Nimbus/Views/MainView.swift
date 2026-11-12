@@ -10,30 +10,24 @@ struct MainView: View {
     @State private var showBrain = false
 
     var body: some View {
-        NavigationSplitView {
-            Sidebar(model: model)
-                .navigationSplitViewColumnWidth(min: 220, ideal: 250, max: 320)
-        } detail: {
-            ZStack {
-                Theme.backdrop.ignoresSafeArea()
+        ZStack {
+            SkyBackdrop()
+            HStack(spacing: 0) {
+                // Starts below the window's close/minimize buttons so nothing overlaps them.
+                Sidebar(model: model, showBrain: $showBrain, showSettings: $showSettings)
+                    .frame(width: 236)
+                    .padding(.leading, 12)
+                    .padding(.top, 40)
+                    .padding(.bottom, 14)
                 if let session = model.selected {
                     SessionDetail(model: model, session: session)
                         .id(session.id)
                 } else {
-                    EmptyHome(model: model)
+                    EmptyHome(model: model).frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
             }
         }
-        .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                Button { showBrain = true } label: { Label("Brain", systemImage: "brain.head.profile") }
-                    .help("Nimbus Brain: teach Nimbus how you take notes")
-            }
-            ToolbarItem(placement: .primaryAction) {
-                Button { showSettings = true } label: { Image(systemName: "gearshape") }
-                    .help("Settings")
-            }
-        }
+        .ignoresSafeArea()
         .sheet(isPresented: $showSettings) { SettingsView(model: model) }
         .sheet(isPresented: $showBrain) { BrainView(model: model) }
         .onReceive(NotificationCenter.default.publisher(for: .showBrain)) { _ in showBrain = true }
@@ -46,43 +40,76 @@ struct MainView: View {
 
 private struct Sidebar: View {
     @Bindable var model: AppModel
+    @Binding var showBrain: Bool
+    @Binding var showSettings: Bool
 
     var body: some View {
-        List(selection: $model.selectedID) {
-            Section("Your classes") {
-                ForEach(model.sessions) { s in
-                    VStack(alignment: .leading, spacing: 3) {
-                        HStack(spacing: 6) {
-                            if model.recordingSessionID == s.id {
-                                Circle().fill(Color(red: 1, green: 0.36, blue: 0.42)).frame(width: 7, height: 7)
-                            }
-                            Text(s.notes?.topic.isEmpty == false ? s.notes!.topic : s.title)
-                                .font(.system(size: 13, weight: .semibold))
-                                .lineLimit(1)
-                        }
-                        Text(s.createdAt.formatted(date: .abbreviated, time: .shortened)
-                             + "  ·  " + ClassSession.clock(s.duration))
-                            .font(.system(size: 11))
-                            .foregroundStyle(Theme.inkSoft)
-                    }
-                    .padding(.vertical, 3)
-                    .tag(s.id)
-                    .contextMenu {
-                        Button("Delete class", role: .destructive) { model.delete(s.id) }
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 6) {
+                // Nimbus himself, showing how he feels right now.
+                MascotBadge(mood: model.mood, level: model.level, size: 50)
+                Text("Nimbus").font(Theme.display(20, 700)).foregroundStyle(Theme.ink)
+                Spacer()
+                IconButton(symbol: "plus", help: "New class") { model.newSession() }
+            }
+            .padding(.horizontal, 12)
+            .padding(.top, 12)
+            .padding(.bottom, 10)
+
+            ScrollView {
+                LazyVStack(spacing: 4) {
+                    ForEach(model.sessions) { s in
+                        row(s)
                     }
                 }
+                .padding(.horizontal, 10)
             }
+
+            HStack(spacing: 8) {
+                IconButton(symbol: "brain.head.profile", help: "Nimbus Brain: how you like notes") { showBrain = true }
+                IconButton(symbol: "gearshape", help: "Settings") { showSettings = true }
+                Spacer()
+            }
+            .padding(16)
         }
-        .safeAreaInset(edge: .bottom) {
-            Button {
-                model.newSession()
-            } label: {
-                Label("New class", systemImage: "plus")
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 4)
+        .raised(PixelShape(), fill: Color(red: 0.97, green: 0.98, blue: 1), lift: 1.2)
+    }
+
+    private func row(_ s: ClassSession) -> some View {
+        let selected = model.selectedID == s.id
+        return Button { model.selectedID = s.id } label: {
+            HStack(spacing: 10) {
+                ZStack {
+                    PixelShape()
+                        .fill(selected ? Theme.skyDeep : Theme.skyMist)
+                    Glyph( model.recordingSessionID == s.id ? "waveform" : "book.closed.fill")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(selected ? .white : Theme.skyDeep)
+                        .symbolEffect(.variableColor.iterative, isActive: model.recordingSessionID == s.id)
+                }
+                .frame(width: 30, height: 30)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(s.displayTitle)
+                        .font(Theme.body(13.5, 700))
+                        .foregroundStyle(Theme.ink)
+                        .lineLimit(1)
+                    Text(s.createdAt.formatted(.dateTime.month(.abbreviated).day()) + "  " + ClassSession.clock(s.duration))
+                        .font(Theme.body(11.5, 600).monospacedDigit())
+                        .foregroundStyle(Theme.inkSoft)
+                }
+                Spacer(minLength: 0)
             }
-            .buttonStyle(.glass)
-            .padding(12)
+            .padding(8)
+            .background {
+                if selected {
+                    Color.clear.raised(PixelShape(), lift: 0.4)
+                }
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .contextMenu {
+            Button("Delete class", role: .destructive) { model.delete(s.id) }
         }
     }
 }
@@ -91,27 +118,51 @@ private struct EmptyHome: View {
     var model: AppModel
 
     var body: some View {
-        VStack(spacing: 18) {
-            CloudMascot(mood: .idle, level: 0).frame(width: 170, height: 122)
-            Text("Hi, I'm Nimbus")
-                .font(.system(size: 34, weight: .bold, design: .rounded))
-                .foregroundStyle(Theme.ink)
-            Text("Press Listen when class starts. I'll write down what your teacher says,\nturn it into bullet notes, and explain anything that didn't click.")
-                .multilineTextAlignment(.center)
-                .font(.system(size: 15))
-                .foregroundStyle(Theme.inkSoft)
-            Button {
+        VStack(spacing: 22) {
+            CloudMascot(mood: .idle, level: 0).frame(width: 220, height: 176)
+            Text("Hi, I'm Nimbus").font(Theme.display(40, 700)).foregroundStyle(Theme.ink)
+            MicButton(model: model, isLive: false, size: 76) {
                 model.newSession()
                 model.toggleRecording()
-            } label: {
-                Label("Start listening", systemImage: "mic.fill")
-                    .font(.system(size: 15, weight: .semibold))
-                    .padding(.horizontal, 10).padding(.vertical, 4)
             }
-            .buttonStyle(.glassProminent)
-            .tint(Theme.ink)
-            .controlSize(.large)
         }
         .padding(40)
+    }
+}
+
+/// The big mic: a chunky 3D pixel button. Black when idle, red with a pulsing
+/// ring that follows the teacher's voice while listening.
+struct MicButton: View {
+    var model: AppModel
+    var isLive: Bool
+    var size: CGFloat = 56
+    var action: () -> Void
+    @State private var hover = false
+    @State private var taps = 0
+
+    var body: some View {
+        let symbol = model.isStarting && isLive ? "hourglass" : isLive ? "stop.fill" : "mic.fill"
+        Button {
+            taps += 1
+            action()
+        } label: {
+            Glyph(symbol, size: size * 0.42, color: .white)
+                .glyphMotion(.for(symbol), hovering: hover, taps: taps)
+                .frame(width: size, height: size - 6)
+        }
+        .buttonStyle(PixelPress(fill: isLive ? Theme.rec : Theme.ink, depth: 6))
+        .overlay {
+            if isLive {
+                PixelShape()
+                    .stroke(Theme.rec.opacity(0.5), lineWidth: 3)
+                    .padding(-4 - CGFloat(model.level) * 8)
+                    .animation(.easeOut(duration: 0.15), value: model.level)
+                    .allowsHitTesting(false)
+            }
+        }
+        .scaleEffect(hover ? 1.05 : 1)
+        .animation(.spring(duration: 0.25, bounce: 0.5), value: hover)
+        .onHover { hover = $0 }
+        .help(isLive ? "Stop listening" : "Start listening")
     }
 }

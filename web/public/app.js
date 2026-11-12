@@ -76,7 +76,11 @@ demos.forEach((d) => seen.observe(d.frame));
 
 // Corner Nimbus changes mood with the section you're looking at.
 const buddy = document.querySelector(".buddy");
-const setMood = (m) => { buddy.className = "buddy " + m; };
+const buddyImg = buddy.querySelector("img");
+const setMood = (m) => {
+  buddy.className = "buddy " + m;
+  buddyImg.src = `media/pixel/nimbus-${m}.png`;
+};
 setMood("happy");
 const moods = new IntersectionObserver((entries) => {
   for (const e of entries) if (e.isIntersecting) setMood(e.target.dataset.mood || "idle");

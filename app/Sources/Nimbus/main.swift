@@ -9,6 +9,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let model = AppModel.shared
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // Website art: NIMBUS_EXPORT_MASCOT=<folder> saves Nimbus in each mood as a PNG and quits.
+        if let folder = ProcessInfo.processInfo.environment["NIMBUS_EXPORT_MASCOT"] {
+            for (name, mood) in [("idle", AppModel.CloudMood.idle), ("listening", .listening), ("thinking", .thinking),
+                                 ("happy", .done), ("oops", .oops)] {
+                let r = ImageRenderer(content: CloudMascot(mood: mood, level: 0.6).frame(width: 240, height: 192))
+                r.scale = 2
+                if let tiff = r.nsImage?.tiffRepresentation, let png = NSBitmapImageRep(data: tiff)?.representation(using: .png, properties: [:]) {
+                    try? png.write(to: URL(fileURLWithPath: folder).appendingPathComponent("nimbus-\(name).png"))
+                }
+            }
+            exit(0)
+        }
         // Nimbus is a bright, sky-colored app; keep it light even in Dark Mode.
         NSApp.appearance = NSAppearance(named: .aqua)
         buildMenu()
@@ -87,11 +99,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                              backing: .buffered, defer: false)
             w.title = "Nimbus"
             w.titlebarAppearsTransparent = true
+            w.titleVisibility = .hidden
+            w.backgroundColor = NSColor(red: 0.965, green: 0.972, blue: 0.984, alpha: 1)
             w.minSize = NSSize(width: 820, height: 560)
             w.isReleasedWhenClosed = false
             w.contentView = NSHostingView(rootView: MainView(model: model))
-            w.setFrameAutosaveName("NimbusMain")
-            if !w.setFrameUsingName("NimbusMain") { w.center() }
+            if ProcessInfo.processInfo.environment["NIMBUS_HOME"] == nil {
+                w.setFrameAutosaveName("NimbusMain")
+                if !w.setFrameUsingName("NimbusMain") { w.center() }
+            }
             // Recording: NIMBUS_WINDOW_AT="x,y,w,h" (screen points, bottom-left origin).
             if let f = ProcessInfo.processInfo.environment["NIMBUS_WINDOW_AT"]?.split(separator: ",").compactMap({ Double($0) }), f.count == 4 {
                 w.setFrame(NSRect(x: f[0], y: f[1], width: f[2], height: f[3]), display: true)

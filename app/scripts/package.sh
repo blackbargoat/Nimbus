@@ -32,6 +32,9 @@ cp .build/apple/Products/Release/Nimbus "$APP/Contents/MacOS/Nimbus"
 strip -S -x "$APP/Contents/MacOS/Nimbus"
 cp Resources/Info.plist "$APP/Contents/Info.plist"
 cp Resources/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
+# Fonts (Quicksand, Nunito: SIL Open Font License) and the 8-bit sky art.
+cp -R Resources/Fonts "$APP/Contents/Resources/"
+cp Resources/sky-far.png Resources/sky-near.png "$APP/Contents/Resources/"
 # Optional shared Google key (kept out of git; see .gitignore).
 [[ -f Resources/bundled-google-key ]] && cp Resources/bundled-google-key "$APP/Contents/Resources/"
 xattr -cr "$APP"

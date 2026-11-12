@@ -28,7 +28,7 @@ struct OnboardingView: View {
         VStack(spacing: 0) {
             HStack(spacing: 6) {
                 ForEach(0..<4) { i in
-                    Capsule().fill(i <= step ? Theme.ink : Theme.ink.opacity(0.12)).frame(height: 4)
+                    PixelShape().fill(i <= step ? Theme.ink : Theme.ink.opacity(0.12)).frame(height: 4)
                 }
             }
             .padding(.horizontal, 30).padding(.top, 22)
@@ -47,13 +47,13 @@ struct OnboardingView: View {
 
             HStack {
                 if step > 0 {
-                    Button("Back") { withAnimation { step -= 1 } }.buttonStyle(.glass)
+                    Button("Back") { withAnimation { step -= 1 } }.buttonStyle(Pill())
                 }
                 Spacer()
                 Button(step == 3 ? "Start using Nimbus" : step == 0 ? "Let's go" : "Next") {
                     if step == 3 { finish() } else { withAnimation(.spring(duration: 0.4)) { step += 1 } }
                 }
-                .buttonStyle(.glassProminent)
+                .buttonStyle(Pill(kind: .dark))
                 .tint(Theme.ink)
                 .controlSize(.large)
                 .keyboardShortcut(.defaultAction)
@@ -61,7 +61,7 @@ struct OnboardingView: View {
             .padding(.horizontal, 30).padding(.bottom, 24)
         }
         .frame(width: 640, height: 560)
-        .background(Theme.backdrop)
+        .background(SkyBackdrop())
     }
 
     // MARK: Steps
@@ -70,9 +70,9 @@ struct OnboardingView: View {
         VStack(spacing: 18) {
             Spacer()
             CloudMascot(mood: .done, level: 0).frame(width: 180, height: 130)
-            Text("Hi, I'm Nimbus.").font(.system(size: 40, weight: .heavy, design: .rounded)).foregroundStyle(Theme.ink)
+            Text("Hi, I'm Nimbus.").font(Theme.display(40)).foregroundStyle(Theme.ink)
             Text("Let's set up your brain so my notes sound like you.")
-                .font(.system(size: 16)).foregroundStyle(Theme.ink.opacity(0.75))
+                .font(Theme.body(16)).foregroundStyle(Theme.ink.opacity(0.75))
             Spacer()
         }
         .frame(maxWidth: .infinity)
@@ -83,20 +83,20 @@ struct OnboardingView: View {
             title("About you", "So I know what level to write at.")
             TextField("Grade and school, like Grade 11, IB Diploma", text: $grade)
                 .textFieldStyle(.roundedBorder).controlSize(.large)
-            Text("Your classes").font(.system(size: 14, weight: .bold)).foregroundStyle(Theme.ink)
+            Text("Your classes").font(Theme.body(14, 700)).foregroundStyle(Theme.ink)
             HStack {
                 TextField("Add a class and teacher, like Global Politics (Mr. Smith)", text: $newClass)
                     .textFieldStyle(.roundedBorder).controlSize(.large)
                     .onSubmit(addClass)
-                Button("Add", action: addClass).buttonStyle(.glass)
+                Button("Add", action: addClass).buttonStyle(Pill())
             }
             FlowLayout(spacing: 8) {
                 ForEach(classes, id: \.self) { c in
                     Button { classes.removeAll { $0 == c } } label: { Label(c, systemImage: "xmark") }
-                        .buttonStyle(.glassProminent).tint(Theme.skyDeep)
+                        .buttonStyle(Pill(kind: .dark)).tint(Theme.skyDeep)
                 }
                 ForEach(classIdeas.filter { idea in !classes.contains { $0.hasPrefix(idea) } }, id: \.self) { idea in
-                    Button("+ \(idea)") { classes.append(idea) }.buttonStyle(.glass)
+                    Button("+ \(idea)") { classes.append(idea) }.buttonStyle(Pill())
                 }
             }
         }
@@ -111,22 +111,22 @@ struct OnboardingView: View {
                     Button {
                         if on { styles.remove(option) } else { styles.insert(option) }
                     } label: { Label(option, systemImage: on ? "checkmark" : "plus") }
-                        .buttonStyle(.glassProminent)
+                        .buttonStyle(Pill(kind: .dark))
                         .tint(on ? Theme.skyDeep : Color.white.opacity(0.6))
                         .foregroundStyle(on ? .white : Theme.ink)
                 }
             }
             HStack {
                 Text("Paste some of your own notes so I copy your style (optional)")
-                    .font(.system(size: 13, weight: .bold)).foregroundStyle(Theme.ink)
+                    .font(Theme.body(13, 700)).foregroundStyle(Theme.ink)
                 Spacer()
-                Button("Import file") { importSample() }.buttonStyle(.glass)
+                Button("Import file") { importSample() }.buttonStyle(Pill())
             }
             TextEditor(text: $sample)
                 .font(.system(size: 12, design: .monospaced))
                 .scrollContentBackground(.hidden)
                 .padding(8)
-                .background(RoundedRectangle(cornerRadius: 12).fill(.white.opacity(0.85)))
+                .background(PixelShape().fill(.white.opacity(0.85)))
                 .frame(minHeight: 120)
         }
     }
@@ -136,17 +136,17 @@ struct OnboardingView: View {
             Spacer()
             CloudMascot(mood: micReady ? .done : .listening, level: micReady ? 0 : 0.5).frame(width: 150, height: 108)
             Text(micReady ? "I can hear you!" : "Let me hear class")
-                .font(.system(size: 32, weight: .heavy, design: .rounded)).foregroundStyle(Theme.ink)
+                .font(Theme.display(32)).foregroundStyle(Theme.ink)
             Text(micReady ? "Your brain is ready. I'll keep learning after every class."
                           : "Your Mac will ask for the microphone and speech recognition. Click Allow for both.")
                 .multilineTextAlignment(.center)
-                .font(.system(size: 15)).foregroundStyle(Theme.ink.opacity(0.75))
+                .font(Theme.body(15)).foregroundStyle(Theme.ink.opacity(0.75))
                 .frame(maxWidth: 420)
             if !micReady {
                 Button { Task { await askForMic() } } label: {
                     Label("Allow microphone", systemImage: "mic.fill").padding(.horizontal, 8)
                 }
-                .buttonStyle(.glassProminent).tint(Theme.skyDeep).controlSize(.large)
+                .buttonStyle(Pill(kind: .dark)).tint(Theme.skyDeep).controlSize(.large)
             }
             Spacer()
         }
@@ -159,8 +159,8 @@ struct OnboardingView: View {
 
     private func title(_ text: String, _ sub: String) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(text).font(.system(size: 30, weight: .heavy, design: .rounded)).foregroundStyle(Theme.ink)
-            Text(sub).font(.system(size: 15)).foregroundStyle(Theme.ink.opacity(0.7))
+            Text(text).font(Theme.display(30)).foregroundStyle(Theme.ink)
+            Text(sub).font(Theme.body(15)).foregroundStyle(Theme.ink.opacity(0.7))
         }
     }
 

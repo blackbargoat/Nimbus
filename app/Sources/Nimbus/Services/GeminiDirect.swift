@@ -17,8 +17,12 @@ struct GeminiDirect {
         return object([
             "topic": ["type": "STRING"],
             "summary": ["type": "STRING"],
-            "sections": ["type": "ARRAY", "items": object(["heading": ["type": "STRING"], "bullets": strings],
-                                                          order: ["heading", "bullets"])],
+            "sections": ["type": "ARRAY", "items": object([
+                "heading": ["type": "STRING"],
+                "kind": ["type": "STRING", "enum": ["bullets", "flow", "timeline", "compare"]],
+                "bullets": strings, "steps": strings, "columns": strings,
+                "rows": ["type": "ARRAY", "items": strings],
+            ], order: ["heading", "kind", "bullets", "steps", "columns", "rows"])],
             "keyTerms": ["type": "ARRAY", "items": object(["term": ["type": "STRING"], "meaning": ["type": "STRING"]],
                                                           order: ["term", "meaning"])],
             "plainWords": ["type": "STRING"],
@@ -27,9 +31,9 @@ struct GeminiDirect {
         ], order: ["topic", "summary", "sections", "keyTerms", "plainWords", "homework", "reviewQuestions"])
     }()
 
-    func notes(for session: ClassSession) async throws -> ClassNotes {
+    func notes(for session: ClassSession, style: NoteStyle) async throws -> ClassNotes {
         let body: [String: Any] = [
-            "systemInstruction": ["parts": [["text": Prompts.system(Prompts.notes, brain: brain)]]],
+            "systemInstruction": ["parts": [["text": Prompts.system(Prompts.notes, brain: brain, last: Prompts.style(style))]]],
             "contents": [["role": "user", "parts": [["text": Self.transcript(session) + "\n\nWrite the notes for this class."]]]],
             "generationConfig": ["responseMimeType": "application/json", "responseSchema": Self.notesSchema],
         ]
@@ -65,13 +69,13 @@ struct GeminiDirect {
         return try await generate(body).trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
-    func answer(_ question: String, in session: ClassSession) -> AsyncThrowingStream<String, Error> {
+    func answer(_ question: String, in session: ClassSession, help: Bool) -> AsyncThrowingStream<String, Error> {
         var prompt = "Class: \(session.title)\n"
         if let summary = session.notes?.summary { prompt += "What the class is about so far: \(summary)\n" }
         prompt += "<recent_transcript>\n\(String(session.recentLines().joined(separator: "\n").suffix(12_000)))\n</recent_transcript>\n\n"
-        prompt += "The teacher just asked: \"\(question)\""
+        prompt += help ? "Last thing I heard: \"\(question)\"" : "The teacher just asked: \"\(question)\""
         let body: [String: Any] = [
-            "systemInstruction": ["parts": [["text": Prompts.system(Prompts.answer, brain: brain)]]],
+            "systemInstruction": ["parts": [["text": Prompts.system(help ? Prompts.help : Prompts.answer, brain: brain)]]],
             "contents": [["role": "user", "parts": [["text": prompt]]]],
         ]
         return AsyncThrowingStream { continuation in

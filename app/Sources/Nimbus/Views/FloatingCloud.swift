@@ -76,43 +76,32 @@ struct FloatingCloud: View {
     }
 
     private var controls: some View {
-        HStack(spacing: 8) {
-            Button {
-                model.toggleRecording()
-            } label: {
-                Image(systemName: model.isRecording || model.demo ? "stop.fill" : "mic.fill")
-                    .font(.system(size: 12, weight: .bold))
-                    .frame(width: 26, height: 26)
-            }
-            .buttonStyle(.glassProminent)
-            .tint(model.isRecording || model.demo ? Color(red: 1, green: 0.36, blue: 0.42) : Theme.skyDeep)
-            .buttonBorderShape(.circle)
+        HStack(spacing: 6) {
+            round(model.isRecording || model.demo ? "stop.fill" : "mic.fill",
+                  fill: model.isRecording || model.demo ? Theme.rec : Theme.ink,
+                  help: model.isRecording ? "Stop listening" : "Start listening") { model.toggleRecording() }
 
             if model.isRecording || model.demo {
-                Button {
-                    model.helpMeAnswer()
-                } label: {
-                    Image(systemName: "lightbulb.max.fill")
-                        .font(.system(size: 12, weight: .bold))
-                        .frame(width: 26, height: 26)
-                }
-                .buttonStyle(.glassProminent)
-                .tint(Theme.sun)
-                .buttonBorderShape(.circle)
-                .help("Help me answer what the teacher just asked")
-                .disabled(model.isAnswering)
-            }
+                round("lightbulb.max.fill", fill: Theme.sun, help: "Help me answer") { model.helpMeAnswer() }
+                    .disabled(model.isAnswering)
+                    .opacity(model.isAnswering ? 0.5 : 1)
 
-            TimelineView(.periodic(from: .now, by: 1)) { ctx in
-                Text(model.demo && !model.isRecording ? "12:48" : model.isStarting ? "Getting ready" : model.isRecording
-                     ? ClassSession.clock(model.elapsed(at: ctx.date)) : "Listen")
-                    .font(.system(size: 12, weight: .semibold, design: .rounded).monospacedDigit())
-                    .foregroundStyle(Theme.ink)
+                TimelineView(.periodic(from: .now, by: 1)) { ctx in
+                    Text(model.demo && !model.isRecording ? "12:48" : ClassSession.clock(model.elapsed(at: ctx.date)))
+                        .font(Theme.body(12, 750).monospacedDigit())
+                        .foregroundStyle(Theme.ink)
+                }
+                .padding(.horizontal, 6)
             }
-            .padding(.trailing, 6)
         }
-        .padding(4)
-        .glassEffect(.regular.tint(.white.opacity(0.4)), in: .capsule)
+        .padding(5)
+        .raised(PixelShape(), lift: 0.6)
+        .shadow(color: Color(red: 0.1, green: 0.25, blue: 0.5).opacity(0.15), radius: 8, y: 3)
+    }
+
+    private func round(_ symbol: String, fill: Color, help: String, action: @escaping () -> Void) -> some View {
+        FloatingButton(symbol: model.isStarting && symbol == "mic.fill" ? "hourglass" : symbol, fill: fill, action: action)
+            .help(help)
     }
 
     private var drag: some Gesture {
@@ -128,5 +117,27 @@ struct FloatingCloud: View {
                 dragStart = nil
                 onDragEnd()
             }
+    }
+}
+
+/// A small 3D pixel button for the floating cloud.
+private struct FloatingButton: View {
+    var symbol: String
+    var fill: Color
+    var action: () -> Void
+    @State private var hover = false
+    @State private var taps = 0
+
+    var body: some View {
+        Button {
+            taps += 1
+            action()
+        } label: {
+            Glyph(symbol, size: 15, color: .white)
+                .glyphMotion(.for(symbol), hovering: hover, taps: taps)
+                .frame(width: 30, height: 28)
+        }
+        .buttonStyle(PixelPress(fill: fill, depth: 4))
+        .onHover { hover = $0 }
     }
 }

@@ -11,7 +11,7 @@ struct TranscriptView: View {
                 LazyVStack(alignment: .leading, spacing: 10) {
                     if session.lines.isEmpty && !isLive {
                         Text("Nothing recorded yet.")
-                            .font(.system(size: 14))
+                            .font(Theme.body(14))
                             .foregroundStyle(Theme.inkSoft)
                             .padding(.top, 40)
                             .frame(maxWidth: .infinity)
@@ -19,33 +19,34 @@ struct TranscriptView: View {
                     ForEach(session.lines) { line in
                         HStack(alignment: .firstTextBaseline, spacing: 12) {
                             Text(ClassSession.clock(line.at))
-                                .font(.system(size: 11, weight: .semibold, design: .rounded).monospacedDigit())
+                                .font(Theme.body(11, 750).monospacedDigit())
                                 .foregroundStyle(Theme.sky)
                                 .frame(width: 44, alignment: .trailing)
                             Text(line.text)
-                                .font(.system(size: 14))
+                                .font(Theme.body(14))
                                 .foregroundStyle(Theme.ink)
                                 .textSelection(.enabled)
                         }
                     }
                     if isLive {
                         HStack(alignment: .firstTextBaseline, spacing: 12) {
-                            Image(systemName: "waveform")
+                            Glyph( "waveform")
                                 .foregroundStyle(Theme.skyDeep)
                                 .symbolEffect(.variableColor.iterative, isActive: true)
                                 .frame(width: 44, alignment: .trailing)
                             Text(model.partial.isEmpty ? "Listening..." : model.partial)
-                                .font(.system(size: 14).italic())
+                                .font(Theme.body(14).italic())
                                 .foregroundStyle(Theme.skyDeep)
                         }
                         .id("live")
                     }
                 }
                 .padding(20)
-                .glassEffect(.regular.tint(.white.opacity(0.35)), in: .rect(cornerRadius: 22))
+                .raised(PixelShape())
                 .padding(.horizontal, 28)
                 .padding(.bottom, 28)
             }
+            .scrollFade()
             .onChange(of: session.lines.count) {
                 if isLive { withAnimation { proxy.scrollTo("live", anchor: .bottom) } }
             }

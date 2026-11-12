@@ -4,7 +4,10 @@ import Foundation
 enum SessionStore {
     static let folder: URL = {
         let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-        let dir = base.appendingPathComponent("Nimbus/sessions", isDirectory: true)
+        // NIMBUS_HOME points a demo copy at its own folder, away from the real classes.
+        let home = ProcessInfo.processInfo.environment["NIMBUS_HOME"].map { URL(fileURLWithPath: $0) }
+            ?? base.appendingPathComponent("Nimbus", isDirectory: true)
+        let dir = home.appendingPathComponent("sessions", isDirectory: true)
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         return dir
     }()

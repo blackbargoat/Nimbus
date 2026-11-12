@@ -12,11 +12,11 @@ struct BrainView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(spacing: 12) {
-                CloudMascot(mood: .done, level: 0).frame(width: 56, height: 40)
+                MascotBadge(mood: .done, size: 56)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Nimbus Brain").font(.system(size: 22, weight: .bold, design: .rounded))
+                    Text("Nimbus Brain").font(Theme.display(22))
                     Text("Teach me how you take notes. I read this every time, and I add to it after each class.")
-                        .font(.system(size: 12)).foregroundStyle(Theme.inkSoft)
+                        .font(Theme.body(12)).foregroundStyle(Theme.inkSoft)
                 }
                 Spacer()
             }
@@ -25,30 +25,30 @@ struct BrainView: View {
                 .font(.system(size: 13, design: .monospaced))
                 .scrollContentBackground(.hidden)
                 .padding(10)
-                .background(RoundedRectangle(cornerRadius: 14).fill(.white.opacity(0.85)))
-                .overlay(RoundedRectangle(cornerRadius: 14).stroke(Theme.sky.opacity(0.35)))
+                .background(PixelShape().fill(.white.opacity(0.85)))
+                .overlay(PixelShape().stroke(Theme.sky.opacity(0.35)))
 
             if let note {
-                Text(note).font(.system(size: 12, weight: .semibold)).foregroundStyle(Theme.skyDeep)
+                Text(note).font(Theme.body(12, 700)).foregroundStyle(Theme.skyDeep)
             }
 
             HStack {
                 Button { importFile() } label: { Label("Teach from a file", systemImage: "square.and.arrow.down") }
-                    .buttonStyle(.glass)
+                    .buttonStyle(Pill())
                     .help("Add a .md or .txt file, like your notebook, a syllabus, or old notes")
                 Button { NSWorkspace.shared.activateFileViewerSelecting([Brain.url]) } label: {
                     Label("Show brain.md", systemImage: "folder")
                 }
-                .buttonStyle(.glass)
+                .buttonStyle(Pill())
                 Button("Reset") { draft = Brain.starter }
-                    .buttonStyle(.glass)
+                    .buttonStyle(Pill())
                 Spacer()
-                Button("Cancel") { dismiss() }.buttonStyle(.glass)
+                Button("Cancel") { dismiss() }.buttonStyle(Pill())
                 Button("Save") {
                     model.brain = draft
                     dismiss()
                 }
-                .buttonStyle(.glassProminent)
+                .buttonStyle(Pill(kind: .dark))
                 .tint(Theme.ink)
                 .keyboardShortcut(.defaultAction)
             }

@@ -8,56 +8,55 @@ struct LiveAnswersView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
-                HStack {
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text("Questions your teacher asked")
-                            .font(.system(size: 18, weight: .bold, design: .rounded))
-                            .foregroundStyle(Theme.ink)
-                        Text(model.liveAnswersOn
-                             ? "I listen for questions and pop up a short answer by the cloud. Missed one? Press the lightbulb."
-                             : "Live answers are off. Turn them on in Settings, or press the lightbulb when you need help.")
-                            .font(.system(size: 13))
-                            .foregroundStyle(Theme.inkSoft)
+                HStack(spacing: 10) {
+                    Text("Teacher asked").font(Theme.display(22, 700)).foregroundStyle(Theme.ink)
+                    if !model.liveAnswersOn {
+                        Glyph( "bell.slash.fill").foregroundStyle(Theme.inkSoft)
+                            .help("Auto answers are off (Settings). The lightbulb still works.")
                     }
                     Spacer()
                     if isLive {
                         Button { model.helpMeAnswer() } label: {
-                            Label("Help me answer", systemImage: "lightbulb.max.fill")
+                            Glyph("lightbulb.max.fill", size: 20).font(.system(size: 16, weight: .bold))
+                                .foregroundStyle(.white).frame(width: 40, height: 40)
+                                .background(PixelShape(step: 2).fill(Theme.sun))
                         }
-                        .buttonStyle(.glassProminent)
-                        .tint(Theme.ink)
+                        .buttonStyle(.plain)
+                        .help("Help me answer")
                         .disabled(model.isAnswering)
                     }
                 }
 
                 if session.answers.isEmpty {
-                    GlassCard {
-                        Text("No questions yet. When your teacher asks something like \u{201C}Why do you think that happened?\u{201D} the answer shows up here.")
-                            .font(.system(size: 14))
-                            .foregroundStyle(Theme.ink)
+                    VStack(spacing: 12) {
+                        Glyph("questionmark.bubble.fill", size: 40).font(.system(size: 34)).foregroundStyle(.white)
+                        Text("No questions yet").font(Theme.display(16, 700)).foregroundStyle(Theme.ink)
                     }
+                    .frame(maxWidth: .infinity).padding(.top, 50)
                 }
 
                 ForEach(session.answers.reversed()) { a in
-                    GlassCard {
-                        HStack {
+                    Card {
+                        HStack(alignment: .firstTextBaseline, spacing: 8) {
                             Text(ClassSession.clock(a.at))
-                                .font(.system(size: 11, weight: .bold, design: .rounded).monospacedDigit())
-                                .foregroundStyle(Theme.skyDeep)
-                            Text("\u{201C}\(a.question)\u{201D}")
-                                .font(.system(size: 13, weight: .semibold))
+                                .font(Theme.body(11.5, 800).monospacedDigit())
+                                .foregroundStyle(.white)
+                                .padding(.horizontal, 7).padding(.vertical, 2)
+                                .background(PixelShape().fill(Theme.skyDeep))
+                            Text(a.question)
+                                .font(Theme.body(14, 700))
                                 .foregroundStyle(Theme.inkSoft)
                                 .lineLimit(3)
                         }
-                        Text(LocalizedStringKey(a.answer))
-                            .font(.system(size: 14))
-                            .foregroundStyle(Theme.ink)
+                        RichText(a.answer, size: 15)
                             .textSelection(.enabled)
                     }
                 }
             }
             .padding(.horizontal, 28)
+            .padding(.top, 14)
             .padding(.bottom, 28)
         }
+        .scrollFade()
     }
 }

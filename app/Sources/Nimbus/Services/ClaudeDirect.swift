@@ -17,7 +17,12 @@ struct ClaudeDirect {
         return object([
             "topic": ["type": "string"],
             "summary": ["type": "string"],
-            "sections": ["type": "array", "items": object(["heading": ["type": "string"], "bullets": strings()])],
+            "sections": ["type": "array", "items": object([
+                "heading": ["type": "string"],
+                "kind": ["type": "string", "enum": ["bullets", "flow", "timeline", "compare"]],
+                "bullets": strings(), "steps": strings(), "columns": strings(),
+                "rows": ["type": "array", "items": strings()],
+            ])],
             "keyTerms": ["type": "array", "items": object(["term": ["type": "string"], "meaning": ["type": "string"]])],
             "plainWords": ["type": "string"],
             "homework": strings(),
@@ -27,14 +32,14 @@ struct ClaudeDirect {
 
     // MARK: Calls
 
-    func notes(for session: ClassSession) async throws -> ClassNotes {
+    func notes(for session: ClassSession, style: NoteStyle) async throws -> ClassNotes {
         let body: [String: Any] = [
             "model": Self.model,
             "max_tokens": 16000,
             "fallbacks": "default",
             "cache_control": ["type": "ephemeral"],
             "output_config": ["effort": "low", "format": ["type": "json_schema", "schema": Self.notesSchema]],
-            "system": Prompts.system(Prompts.notes, brain: brain),
+            "system": Prompts.system(Prompts.notes, brain: brain, last: Prompts.style(style)),
             "messages": [["role": "user",
                           "content": Self.transcriptBlocks(session) + [["type": "text", "text": "Write the notes for this class."]]]],
         ]
@@ -71,18 +76,18 @@ struct ClaudeDirect {
         return try await send(body).trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
-    func answer(_ question: String, in session: ClassSession) -> AsyncThrowingStream<String, Error> {
+    func answer(_ question: String, in session: ClassSession, help: Bool) -> AsyncThrowingStream<String, Error> {
         var prompt = "Class: \(session.title)\n"
         if let summary = session.notes?.summary { prompt += "What the class is about so far: \(summary)\n" }
         prompt += "<recent_transcript>\n\(String(session.recentLines().joined(separator: "\n").suffix(12_000)))\n</recent_transcript>\n\n"
-        prompt += "The teacher just asked: \"\(question)\""
+        prompt += help ? "Last thing I heard: \"\(question)\"" : "The teacher just asked: \"\(question)\""
         let body: [String: Any] = [
             "model": Self.model,
             "max_tokens": 2000,
             "stream": true,
             "fallbacks": "default",
             "output_config": ["effort": "low"],
-            "system": Prompts.system(Prompts.answer, brain: brain),
+            "system": Prompts.system(help ? Prompts.help : Prompts.answer, brain: brain),
             "messages": [["role": "user", "content": prompt]],
         ]
         return AsyncThrowingStream { continuation in

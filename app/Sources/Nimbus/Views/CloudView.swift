@@ -23,110 +23,158 @@ struct CloudShape: Shape {
     }
 }
 
-/// Nimbus himself. Breathes when idle, bobs with the teacher's voice while
-/// listening, thinks with little dots, and smiles when notes are ready.
+/// Nimbus as 8-bit pixel art, to match the pixel sky. Same moods as before:
+/// breathes when idle, mouth bars move with the teacher's voice while listening,
+/// thought dots while thinking, happy eyes when notes are ready, and a worried
+/// face when something went wrong.
 struct CloudMascot: View {
     var mood: AppModel.CloudMood
     var level: Float
 
-    var body: some View {
-        TimelineView(.animation) { context in
-            let t = context.date.timeIntervalSinceReferenceDate
-            let lvl = CGFloat(level)
-            let breathe = 1 + 0.025 * sin(t * 1.6) + (mood == .listening ? lvl * 0.06 : 0)
-            let bob = mood == .listening ? sin(t * 5) * 1.5 * (0.4 + lvl) : sin(t * 1.2) * 2
+    /// Grid size in art pixels. The top 4 rows are sky, for the thought dots.
+    static let cols = 30, rows = 24, top = 4
 
-            ZStack {
-                CloudShape()
-                    .fill(LinearGradient(colors: [.white, Color(red: 0.93, green: 0.96, blue: 1.0)],
-                                         startPoint: .top, endPoint: .bottom))
-                CloudShape()
-                    .fill(.clear)
-                    .glassEffect(.clear.tint(Theme.sky.opacity(mood == .listening ? 0.18 : 0.06)).interactive(),
-                                 in: CloudShape())
-                // Soft blue underside and a bright top edge make it look puffy.
-                CloudShape()
-                    .fill(LinearGradient(colors: [.clear, Theme.sky.opacity(0.28)], startPoint: .center, endPoint: .bottom))
-                    .allowsHitTesting(false)
-                CloudShape()
-                    .stroke(LinearGradient(colors: [.white, .white.opacity(0)], startPoint: .top, endPoint: .center),
-                            lineWidth: 2)
-                    .blur(radius: 1)
-                    .allowsHitTesting(false)
-                face(t: t)
-                    .offset(x: 2, y: 10)
-                if mood == .thinking { thinkingDots(t: t).offset(y: -44) }
-                if mood == .listening { recDot(t: t).offset(x: 38, y: -18) }
-            }
-            .scaleEffect(breathe)
-            .offset(y: bob)
-            .shadow(color: Theme.skyDeep.opacity(0.25), radius: 14, y: 8)
+    private enum Ink { case fringe, body, shade, deep, ground }
+
+    /// The cloud body, worked out once from CloudShape. Shaded like the clouds in the
+    /// sky art: white core, a dithered light-blue fringe instead of an outline, a blue
+    /// belly, and a soft pixel shadow underneath so he floats.
+    private static let art: [(Int, Int, Ink)] = {
+        let bodyRows = rows - top
+        let shape = CloudShape().path(in: CGRect(x: 1, y: 1, width: CGFloat(cols - 2), height: CGFloat(bodyRows - 2)))
+        func inside(_ x: Int, _ y: Int) -> Bool {
+            x >= 0 && y >= 0 && x < cols && y < bodyRows && shape.contains(CGPoint(x: Double(x) + 0.5, y: Double(y) + 0.5))
         }
-    }
-
-    @ViewBuilder
-    private func face(t: TimeInterval) -> some View {
-        let blink = (t.truncatingRemainder(dividingBy: 4.2)) < 0.14
-        let look: CGFloat = mood == .listening ? CGFloat(sin(t * 0.9)) * 3 : 0
-        VStack(spacing: 5) {
-            HStack(spacing: 16) {
-                eye(blink: blink, happy: mood == .done)
-                eye(blink: blink, happy: mood == .done)
-            }
-            .offset(x: look)
-            mouth(t: t)
-        }
-    }
-
-    @ViewBuilder
-    private func eye(blink: Bool, happy: Bool) -> some View {
-        if happy {
-            Image(systemName: "chevron.up")
-                .font(.system(size: 11, weight: .heavy))
-                .foregroundStyle(Theme.ink)
-        } else {
-            Capsule()
-                .fill(Theme.ink)
-                .frame(width: 7, height: blink ? 1.5 : 11)
-        }
-    }
-
-    @ViewBuilder
-    private func mouth(t: TimeInterval) -> some View {
-        switch mood {
-        case .listening:
-            HStack(spacing: 2.5) {
-                ForEach(0..<4, id: \.self) { i in
-                    let wave = abs(sin(t * 9 + Double(i) * 1.3))
-                    Capsule()
-                        .fill(Theme.skyDeep)
-                        .frame(width: 3, height: 3 + CGFloat(level) * 10 * wave)
+        var out: [(Int, Int, Ink)] = []
+        for y in 0..<bodyRows {
+            for x in 0..<cols {
+                let edge = [(1, 0), (-1, 0), (0, 1), (0, -1)].contains { !inside(x + $0.0, y + $0.1) }
+                if inside(x, y) {
+                    let ink: Ink = !inside(x, y + 1) ? .deep
+                        : (!inside(x, y + 3) || y > bodyRows - 6) ? .shade
+                        : edge ? .fringe : .body
+                    out.append((x, y + top, ink))
                 }
             }
-            .frame(height: 13)
-        case .done:
-            Capsule().fill(Theme.ink).frame(width: 14, height: 4)
-                .overlay(Capsule().fill(Color.pink.opacity(0.7)).frame(width: 7, height: 2).offset(y: 1))
-        default:
-            Capsule().fill(Theme.ink.opacity(0.8)).frame(width: 9, height: 3)
         }
-    }
+        return out
+    }()
 
-    private func thinkingDots(t: TimeInterval) -> some View {
-        HStack(spacing: 5) {
-            ForEach(0..<3, id: \.self) { i in
-                Circle()
-                    .fill(Theme.skyDeep)
-                    .frame(width: 7, height: 7)
-                    .offset(y: -4 * max(0, sin(t * 6 - Double(i) * 0.8)))
+    var body: some View {
+        TimelineView(.animation(minimumInterval: 1 / 20)) { context in
+            let t = context.date.timeIntervalSinceReferenceDate
+            Canvas { ctx, size in
+                let px = min(size.width / CGFloat(Self.cols), size.height / CGFloat(Self.rows))
+                let ox = (size.width - px * CGFloat(Self.cols)) / 2
+                // Bob in whole art pixels, like an old game sprite.
+                let bobRate = mood == .listening ? 4.0 : 1.4
+                let bob = CGFloat((sin(t * bobRate) > 0.3 ? 1 : 0) + (mood == .listening && level > 0.25 ? 1 : 0))
+                let oy = (size.height - px * CGFloat(Self.rows)) / 2 - bob * px * 0.5
+                func dot(_ x: Int, _ y: Int, _ color: Color) {
+                    ctx.fill(Path(CGRect(x: ox + CGFloat(x) * px, y: oy + CGFloat(y) * px, width: px + 0.3, height: px + 0.3)),
+                             with: .color(color))
+                }
+                // Shadow on the "ground", left behind when he bobs up.
+                for x in 6..<(Self.cols - 6) where (x + Int(bob)) % 2 == 0 || (x > 9 && x < Self.cols - 9) {
+                    ctx.fill(Path(CGRect(x: ox + CGFloat(x) * px, y: (size.height - px * CGFloat(Self.rows)) / 2 + CGFloat(Self.rows - 1) * px + px * 0.6,
+                                         width: px + 0.3, height: px * 0.8)),
+                             with: .color(Pixel.ground.opacity(0.35 - Double(bob) * 0.1)))
+                }
+                for (x, y, ink) in Self.art {
+                    switch ink {
+                    case .fringe: dot(x, y, (x + y).isMultiple(of: 2) ? Pixel.light : Pixel.fringe)
+                    case .body: dot(x, y, .white)
+                    case .shade: dot(x, y, (x + y).isMultiple(of: 2) ? Pixel.shade : .white)
+                    case .deep: dot(x, y, Pixel.shade)
+                    case .ground: break
+                    }
+                }
+                face(t: t, dot: dot)
             }
         }
+        .accessibilityLabel("Nimbus")
     }
 
-    private func recDot(t: TimeInterval) -> some View {
-        Circle()
-            .fill(Color(red: 1, green: 0.33, blue: 0.38))
-            .frame(width: 9, height: 9)
-            .opacity(0.55 + 0.45 * sin(t * 4))
+    /// Eyes, mouth, and extras, drawn as pixel patterns.
+    private func face(t: TimeInterval, dot: (Int, Int, Color) -> Void) {
+        let eyeY = 14, leftX = 12, rightX = 17, mouthY = 17
+        let blink = t.truncatingRemainder(dividingBy: 4.2) < 0.15
+        let ink = Pixel.ink
+
+        switch mood {
+        case .done:
+            // ^ ^ eyes, a smile, rosy cheeks.
+            for x in [leftX, rightX] { dot(x - 1, eyeY + 1, ink); dot(x, eyeY, ink); dot(x + 1, eyeY + 1, ink) }
+            dot(13, mouthY, ink); dot(16, mouthY, ink); dot(14, mouthY + 1, ink); dot(15, mouthY + 1, ink)
+            dot(10, eyeY + 2, Pixel.cheek); dot(19, eyeY + 2, Pixel.cheek)
+        case .oops:
+            // Worried: slanted brows and a wobbly mouth.
+            dot(leftX - 1, eyeY - 2, ink); dot(leftX, eyeY - 1, ink)
+            dot(rightX + 1, eyeY - 2, ink); dot(rightX, eyeY - 1, ink)
+            for x in [leftX, rightX] { dot(x, eyeY, ink); dot(x, eyeY + 1, ink) }
+            dot(13, mouthY + 1, ink); dot(14, mouthY, ink); dot(15, mouthY, ink); dot(16, mouthY + 1, ink)
+        default:
+            // Round eyes that look up while thinking and side to side while listening.
+            let look = mood == .listening ? (sin(t * 0.9) > 0 ? 1 : 0) : 0
+            let up = mood == .thinking ? -1 : 0
+            for x in [leftX, rightX] {
+                if blink {
+                    dot(x + look, eyeY + 1, ink)
+                } else {
+                    dot(x + look, eyeY + up, ink); dot(x + look, eyeY + 1 + up, ink)
+                }
+            }
+            switch mood {
+            case .listening:
+                // Voice bars that jump with the mic level.
+                for i in 0..<4 {
+                    let wave = abs(sin(t * 9 + Double(i) * 1.3))
+                    let h = 1 + Int((Double(level) * 3.5 * wave).rounded())
+                    for k in 0..<min(h, 3) { dot(13 + i, mouthY + 1 - k, Pixel.voice) }
+                }
+            case .thinking:
+                dot(14, mouthY, ink); dot(15, mouthY, ink)
+                // Three dots hopping above his head.
+                for i in 0..<3 {
+                    let hop = sin(t * 6 - Double(i) * 0.8) > 0.2 ? 1 : 0
+                    dot(11 + i * 4, 2 - hop, Pixel.voice); dot(12 + i * 4, 2 - hop, Pixel.voice)
+                    dot(11 + i * 4, 3 - hop, Pixel.voice); dot(12 + i * 4, 3 - hop, Pixel.voice)
+                }
+            default:
+                dot(14, mouthY, ink); dot(15, mouthY, ink)
+            }
+        }
+        if mood == .listening, sin(t * 4) > -0.2 {
+            // Little red "on air" light.
+            dot(24, 7, Theme.rec); dot(25, 7, Theme.rec); dot(24, 8, Theme.rec); dot(25, 8, Theme.rec)
+        }
+    }
+}
+
+/// The pixel palette, pulled from the sky art so Nimbus belongs in it.
+enum Pixel {
+    static let fringe = Color(red: 0.66, green: 0.78, blue: 0.95)
+    static let shade = Color(red: 0.74, green: 0.83, blue: 0.96)
+    static let light = Color(red: 0.84, green: 0.90, blue: 0.98)
+    static let ground = Color(red: 0.16, green: 0.3, blue: 0.62)
+    /// The hard block shadow under every panel and button.
+    static let drop = Color(red: 0.24, green: 0.40, blue: 0.74)
+    static let ink = Color(red: 0.08, green: 0.12, blue: 0.24)
+    static let voice = Color(red: 0.16, green: 0.45, blue: 0.91)
+    static let cheek = Color(red: 1.0, green: 0.62, blue: 0.72)
+}
+
+/// Nimbus on his own little patch of sky, so he stands out at small sizes
+/// and never ends up white-on-white.
+struct MascotBadge: View {
+    var mood: AppModel.CloudMood
+    var level: Float = 0
+    var size: CGFloat = 56
+
+    var body: some View {
+        CloudMascot(mood: mood, level: level)
+            .frame(width: size * 0.92, height: size * 0.74)
+            .frame(width: size, height: size * 0.86)
+            .pixelBlock(Color(red: 0.42, green: 0.62, blue: 0.93), depth: 4, radius: 9)
     }
 }
